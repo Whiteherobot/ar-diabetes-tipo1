@@ -224,3 +224,7 @@ Todas se resuelven solas al abrir el proyecto (necesita internet la primera vez)
 - Android **Graphics API: solo OpenGLES3** (ARCore no soporta Vulkan).
 - `minSdkVersion`: Android API 26.
 - Bundle ID: `com.endify.ardiabetes`.
+
+## Licencia
+
+MIT. Ver [LICENSE](LICENSE).
