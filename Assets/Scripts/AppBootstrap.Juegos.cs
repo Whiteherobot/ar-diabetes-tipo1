@@ -76,6 +76,7 @@ namespace ARDiabetes
 
         void RefreshJuegos()
         {
+            if (pJuegos == null) return;
             var refs = pJuegos.GetComponent<JuegosRefs>();
             if (refs == null) return;
             for (int i = 0; i < 3; i++)
@@ -315,6 +316,7 @@ namespace ARDiabetes
 
         void RefreshQuiz()
         {
+            if (bookQuiz == null || quizBook < 0 || quizBook >= bookQuiz.Length || bookQuiz[quizBook] == null) return;
             quizQ = 0; quizScore = 0;
             var refs = bookQuiz[quizBook].GetComponent<QuizRefs>();
             if (refs == null) return;

@@ -17,14 +17,15 @@ public static class CapturaVistas
     [MenuItem("ARDiabetes/Capturar vistas")]
     public static void Capturar()
     {
-        EditorSceneManager.OpenScene("Assets/Scenes/Main.unity");
-        var boot = Object.FindAnyObjectByType<AppBootstrap>();
         AppBootstrap.PreviewVertical = true;
 
         int[] vistas = LeerVistas();
         Directory.CreateDirectory("Capturas");
         foreach (int v in vistas)
         {
+            EditorSceneManager.OpenScene(EscenasSetup.PathForPanel(v));
+            var boot = Object.FindAnyObjectByType<AppBootstrap>();
+            if (boot == null) throw new System.InvalidOperationException("No hay AppBootstrap para la vista " + v);
             boot.EditorPreview(v);
             var canvas = Object.FindAnyObjectByType<Canvas>();
             MostrarOcultos(canvas.transform);
@@ -46,7 +47,6 @@ public static class CapturaVistas
                 }
             }
         }
-        boot.EditorClearPreview();
         AppBootstrap.PreviewVertical = false;
     }
 

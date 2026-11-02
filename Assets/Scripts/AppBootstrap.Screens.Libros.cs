@@ -142,6 +142,7 @@ namespace ARDiabetes
 
         void RefreshDetalle()
         {
+            if (bookDetalle == null || currentBook < 0 || currentBook >= bookDetalle.Length) return;
             var p = bookDetalle[currentBook];
             var refs = p.GetComponent<DetalleRefs>();
             if (refs == null) return;
@@ -157,7 +158,7 @@ namespace ARDiabetes
         RectTransform BuildLibroAR(int book)
         {
             var b = books[book];
-            var p = BuildArScreenCore(book + "_AR", () => modelViewers[book], () => ShowOnly(bookDetalle[book]));
+            var p = BuildArScreenCore(book + "_AR", () => book < modelViewers.Length ? modelViewers[book] : null, () => ShowOnly(bookDetalle[book]));
             return p;
         }
 

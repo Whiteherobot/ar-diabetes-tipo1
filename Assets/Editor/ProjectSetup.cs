@@ -12,20 +12,24 @@ using ARDiabetes;
 /// <summary>
 /// Setup reproducible del proyecto (se ejecuta por CLI vía -executeMethod ProjectSetup.Build):
 ///  - Marca el arte de Assets/Imagenes como Sprite.
-///  - Crea la escena Scenes/Main.unity con cámara, EventSystem y AppBootstrap (sprites cableados).
+///  - Crea las escenas de Assets/Scenes con cámara, EventSystem y AppBootstrap cableados.
 ///  - Registra la escena en Build Settings y fija PlayerSettings para Android (portrait, bundle id).
 /// </summary>
 public static class ProjectSetup
 {
-    const string ScenePath = "Assets/Scenes/Main.unity";
+    public const string ScenePath = "Assets/Scenes/Main.unity";
 
     [MenuItem("ARDiabetes/Rebuild Scene")]
     public static void Build()
     {
+        EscenasSetup.Crear();
+    }
+
+    public static AppBootstrap CrearBase()
+    {
         MarcarSpritesEnCarpeta("Assets/Imagenes");
 
-        Directory.CreateDirectory("Assets/Scenes");
-        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        var scene = EditorSceneManager.GetActiveScene();
 
         // Cámara
         var camGo = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
@@ -119,11 +123,6 @@ public static class ProjectSetup
         boot.markersNutri = LoadMarkers("qr_nutri_plato", "qr_nutri_carbohidratos", "qr_nutri_recomendados", "qr_nutri_habitos");
         boot.markersClinico = LoadMarkers("qr_clinico_insulina", "qr_clinico_sintomas", "qr_clinico_monitoreo", "qr_clinico_cuidados");
 
-        EditorSceneManager.MarkSceneDirty(scene);
-        EditorSceneManager.SaveScene(scene, ScenePath);
-
-        EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
-
         PlayerSettings.companyName = "Endify";
         PlayerSettings.productName = "AR Diabetes Tipo 1";
         PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;
@@ -141,7 +140,7 @@ public static class ProjectSetup
         catch (System.Exception e) { Debug.LogWarning("Android settings: " + e.Message); }
 
         AssetDatabase.SaveAssets();
-        Debug.Log("[ProjectSetup] Escena y ajustes generados OK. logo=" + (boot.spLogo != null));
+        return boot;
     }
 
     // Build de validación (Linux) para probar las pantallas en la PC.
@@ -149,7 +148,7 @@ public static class ProjectSetup
     {
         var opts = new BuildPlayerOptions
         {
-            scenes = new[] { ScenePath },
+            scenes = EditorBuildSettingsScenePaths(),
             locationPathName = "/tmp/ardiabetes_linux/ARDiabetes.x86_64",
             target = BuildTarget.StandaloneLinux64,
             options = BuildOptions.None
@@ -168,7 +167,7 @@ public static class ProjectSetup
         System.IO.Directory.CreateDirectory("/tmp/ardiabetes_apk");
         var opts = new BuildPlayerOptions
         {
-            scenes = new[] { ScenePath },
+            scenes = EditorBuildSettingsScenePaths(),
             locationPathName = "/tmp/ardiabetes_apk/ARDiabetes.apk",
             target = BuildTarget.Android,
             options = BuildOptions.None
@@ -180,11 +179,21 @@ public static class ProjectSetup
             EditorApplication.Exit(1);
     }
 
+    static string[] EditorBuildSettingsScenePaths()
+    {
+        var enabled = new System.Collections.Generic.List<string>();
+        foreach (var scene in EditorBuildSettings.scenes)
+            if (scene.enabled) enabled.Add(scene.path);
+        return enabled.ToArray();
+    }
+
     // ---- Preview de las vistas en modo edición ----
     static void Prev(int i)
     {
+        EditorSceneManager.OpenScene(EscenasSetup.PathForPanel(i));
         var b = UnityEngine.Object.FindFirstObjectByType<AppBootstrap>();
-        if (b == null) { Debug.LogError("[Preview] No hay AppBootstrap en la escena. Abre Assets/Scenes/Main.unity."); return; }
+        if (b == null) { Debug.LogError("[Preview] No hay AppBootstrap en la escena."); return; }
+        AppBootstrap.PreviewVertical = true;
         b.EditorPreview(i);
         Debug.Log("[Preview] Mostrando vista " + i + " — mira la pestaña Game.");
     }
@@ -205,6 +214,13 @@ public static class ProjectSetup
     [MenuItem("ARDiabetes/Preview/7 Progreso")] static void Pv14() => Prev(14);
     [MenuItem("ARDiabetes/Preview/8 Configuración")] static void Pv15() => Prev(15);
     [MenuItem("ARDiabetes/Preview/9 Ayuda")] static void Pv16() => Prev(16);
+    [MenuItem("ARDiabetes/Preview/Juegos")] static void Pv17() => Prev(17);
+    [MenuItem("ARDiabetes/Preview/Quiz Fisiológico")] static void Pv18() => Prev(18);
+    [MenuItem("ARDiabetes/Preview/Quiz Nutricional")] static void Pv19() => Prev(19);
+    [MenuItem("ARDiabetes/Preview/Quiz Clínico")] static void Pv20() => Prev(20);
+    [MenuItem("ARDiabetes/Preview/Insignias")] static void Pv21() => Prev(21);
+    [MenuItem("ARDiabetes/Preview/Colección")] static void Pv22() => Prev(22);
+    [MenuItem("ARDiabetes/Preview/Mundos")] static void Pv23() => Prev(23);
     [MenuItem("ARDiabetes/Preview/Limpiar preview")]
     static void PvClear()
     {

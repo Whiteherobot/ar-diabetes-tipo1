@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using ARDiabetes;
 
 /// <summary>
@@ -35,10 +36,11 @@ public static class CapturaAnimaciones
 
     public static void Iniciar()
     {
-        EditorSceneManager.OpenScene("Assets/Scenes/Main.unity");
         string vistas = "0,3";
         var args = System.Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length - 1; i++) if (args[i] == "-vistas") vistas = args[i + 1];
+        int first = int.Parse(vistas.Split(',')[0]);
+        EditorSceneManager.OpenScene(EscenasSetup.PathForPanel(first));
         SessionState.SetString(Clave, vistas);
         SessionState.SetBool(Clave + ".activo", true);
         AppBootstrap.PreviewVertical = true;
@@ -63,6 +65,13 @@ public static class CapturaAnimaciones
         {
             if (pendientes.Count == 0) { Terminar(); return; }
             vista = pendientes.Dequeue(); foto = 0;
+            SceneManager.LoadScene(EscenasSetup.PathForPanel(vista));
+            return;
+        }
+
+        if (Time.timeSinceLevelLoad < 1.5f) return;
+        if (foto == 0)
+        {
             Mostrar(boot, vista);
             siguiente = EditorApplication.timeSinceStartup;
         }

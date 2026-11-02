@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 namespace ARDiabetes
 {
@@ -235,6 +236,12 @@ namespace ARDiabetes
         // ============================================================
         void ShowOnly(RectTransform panel, bool animate = true)
         {
+            if (panel != null && stubs.TryGetValue(panel, out var destinoPanel))
+            {
+                destino = destinoPanel;
+                SceneManager.LoadScene(EscenasPorPanel[destinoPanel]);
+                return;
+            }
             shown = Array.IndexOf(panels, panel);
             if (shown < 0) shown = 0;
             if (audioSrc != null) audioSrc.Stop();
@@ -283,13 +290,13 @@ namespace ARDiabetes
                 if (isBookAr)
                 {
                     currentBook = book;
-                    modelViewer = modelViewers[book];
+                    modelViewer = book >= 0 && book < modelViewers.Length ? modelViewers[book] : null;
                     var names = new List<string>();
                     if (books[book].Markers != null)
                         foreach (var m in books[book].Markers) if (m != null) names.Add(m.name);
                     arController?.SetScope(names);
-                    if (arTitle != null) arTitle.text = books[book].TopicTitle[currentTopic];
-                    currentArInfoText = books[book].Desc(currentTopic, AppState.Age);
+                    if (arTitle != null && books != null && currentTopic < books[book].TopicTitle.Length) arTitle.text = books[book].TopicTitle[currentTopic];
+                    if (books != null) currentArInfoText = books[book].Desc(currentTopic, AppState.Age);
                 }
                 else
                 {
@@ -314,7 +321,7 @@ namespace ARDiabetes
             // apagan para no gastar GPU en pantallas donde ni siquiera son visibles.
             for (int i = 0; i < modelViewers.Length; i++)
                 modelViewers[i]?.SetActive(modelViewers[i] == modelViewer);
-            if (animate) panel.GetComponent<Anim>()?.Reproducir();
+            if (animate && panel != null) panel.GetComponent<Anim>()?.Reproducir();
         }
 
         IEnumerator FadeIn(RectTransform panel)

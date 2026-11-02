@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 namespace ARDiabetes
 {
@@ -18,6 +19,25 @@ namespace ARDiabetes
     /// </summary>
     public partial class AppBootstrap : MonoBehaviour
     {
+        public int[] vistas;
+        public static bool PreviewVertical;
+        public static int destino = -1;
+        public static readonly string[] EscenasPorPanel =
+        {
+            "01_Inicio", "01_Inicio", "01_Inicio", "02_Menu",
+            "03_Libros", "03_Libros", "03_Libros", "03_Libros", "03_Libros", "03_Libros",
+            "03_Libros", "03_Libros", "03_Libros", "03_Libros", "05_Progreso",
+            "06_Configuracion", "06_Configuracion", "04_Juegos", "04_Juegos", "04_Juegos",
+            "04_Juegos", "05_Progreso", "05_Progreso", "02_Menu"
+        };
+        static readonly string[] NombresPanel =
+        {
+            "Inicio", "Bienvenida", "Perfil", "Menu", "Fisiologico_Temas", "Fisiologico_Detalle",
+            "Fisiologico_AR", "Nutricional_Temas", "Nutricional_Detalle", "Nutricional_AR",
+            "Clinico_Temas", "Clinico_Detalle", "Clinico_AR", "Escaneo_Generico", "Progreso",
+            "Configuracion", "Ayuda", "Juegos", "Quiz_Fisiologico", "Quiz_Nutricional",
+            "Quiz_Clinico", "Insignias", "Coleccion", "Mundos"
+        };
         [Header("Sprites (asignados por ProjectSetup)")]
         public Sprite spLogo;
         public Sprite spWelcome;
@@ -62,10 +82,12 @@ namespace ARDiabetes
         RectTransform[] panels;
         HashSet<RectTransform> arPanels = new HashSet<RectTransform>();
         HashSet<RectTransform> detallePanels = new HashSet<RectTransform>();
+        Dictionary<RectTransform, int> stubs = new Dictionary<RectTransform, int>();
         int shown;
+        int previewIndex = -1;
         bool builtLandscape;
         bool captureStarted;
-        int quizBook, quizQ, quizScore;
+        static int quizBook, quizQ, quizScore;
         bool quizAnswered;
         // Estado del juego de Matching (tap-to-pair) para la pregunta actual.
         int[] matchRightOrder;
@@ -91,7 +113,8 @@ namespace ARDiabetes
         Image arBg;
         TMP_Text arHintText;
         Camera mainCam;
-        int currentBook, currentTopic;
+        static int currentBook, currentTopic;
+        static bool streakTouched;
         bool isGenericScan;
         TMP_Text detTitle, detDesc, arTitle, arToast;
         Image detImg, detBand;
@@ -100,8 +123,6 @@ namespace ARDiabetes
         // toast del botón "i" cuando todavía no se escaneó ningún marcador real.
         string currentArInfoText;
 
-        // Solo para capturas desde el editor (en batch Screen mide 640x480)
-        public static bool PreviewVertical;
         bool Land => !PreviewVertical && Screen.width > Screen.height;
         static RectTransform R(Component c) => (RectTransform)c.transform;
 
@@ -116,6 +137,16 @@ namespace ARDiabetes
             }
         }
 
+        void Awake()
+        {
+            if (!Application.isPlaying) return;
+            foreach (var sceneRoot in gameObject.scene.GetRootGameObjects())
+            {
+                var bakedCanvas = sceneRoot.GetComponent<Canvas>();
+                if (bakedCanvas != null) Destroy(bakedCanvas.gameObject);
+            }
+        }
+
         void Start()
         {
             if (font != null) UIKit.Font = font;
@@ -124,24 +155,37 @@ namespace ARDiabetes
             // Cama musical de fondo, separada de audioSrc (narración) para que pausar/reanudar una
             // no afecte a la otra. Un solo AudioSource para toda la app (no por pantalla): arranca
             // una vez y sigue sonando en loop mientras se navega, igual que en cualquier app similar.
-            bgAudioSrc = gameObject.AddComponent<AudioSource>();
-            bgAudioSrc.playOnAwake = false;
-            bgAudioSrc.loop = true;
-            bgAudioSrc.volume = 0.35f;
-            bgAudioSrc.spatialBlend = 0f;
+            var music = GameObject.Find("ARDiabetes Background Music");
+            if (music == null)
+            {
+                music = new GameObject("ARDiabetes Background Music");
+                DontDestroyOnLoad(music);
+                bgAudioSrc = music.AddComponent<AudioSource>();
+                bgAudioSrc.playOnAwake = false;
+                bgAudioSrc.loop = true;
+                bgAudioSrc.volume = 0.35f;
+                bgAudioSrc.spatialBlend = 0f;
+            }
+            else bgAudioSrc = music.GetComponent<AudioSource>();
             if (musicaFondo != null)
             {
                 bgAudioSrc.clip = musicaFondo;
-                if (!AppState.Muted) bgAudioSrc.Play();
+                if (!AppState.Muted && !bgAudioSrc.isPlaying) bgAudioSrc.Play();
             }
             mainCam = Camera.main;
             // Se guarda para recién mostrar el toast cuando exista UI (ver InitialBuild): acá el
             // Canvas todavía no se construyó, así que ShowReward no tendría dónde pintarlo.
-            pendingStartMsgs = AppState.TouchDailyStreak();
+            if (!streakTouched)
+            {
+                streakTouched = true;
+                pendingStartMsgs = AppState.TouchDailyStreak();
+            }
             BuildBooks();
 
-            for (int b = 0; b < 3; b++)
-                if (books[b].Model != null) modelViewers[b] = ModelViewer.Create(books[b].Model, books[b].ModelTint, b);
+            bool includesAr = IncludesAny(4, 13);
+            if (includesAr)
+                for (int b = 0; b < 3; b++)
+                    if (books[b].Model != null) modelViewers[b] = ModelViewer.Create(books[b].Model, books[b].ModelTint, b);
 
             // Un único rig de AR (ARSession/cámara) para toda la app: crear uno por libro causaba que
             // ARCore devolviera "camera was passed NULL" al tener varias sesiones nativas compitiendo
@@ -159,19 +203,25 @@ namespace ARDiabetes
                     scanEntries.Add(new MarkerEntry { Marker = m, Model = books[b].Model, Tint = books[b].ModelTint, Title = title, Book = b, Topic = i });
                 }
             }
-            arController = ARController.CreateMulti(scanEntries.ToArray());
-            arController.OnState = ARStateChanged;
-            arController.OnMarkerTitle = t => { if (arTitle != null) arTitle.text = t; };
-            arController.OnMarkerSeen = (b, t) =>
+            if (includesAr)
             {
-                var msgs = AppState.MarkMarkerScanned(b, t);
-                if (msgs.Count > 0) ShowReward(string.Join("\n", msgs));
-            };
+                arController = ARController.CreateMulti(scanEntries.ToArray());
+                if (arController != null)
+                {
+                    arController.OnState = ARStateChanged;
+                    arController.OnMarkerTitle = t => { if (arTitle != null) arTitle.text = t; };
+                    arController.OnMarkerSeen = (b, t) =>
+                    {
+                        var msgs = AppState.MarkMarkerScanned(b, t);
+                        if (msgs.Count > 0) ShowReward(string.Join("\n", msgs));
+                    };
+                }
+            }
             // El texto de info ahora vive anclado en el espacio 3D junto al modelo (no como
             // tarjeta 2D encima de la pantalla) — ARController lo arma solo, pidiendo acá el
             // texto real (depende de la edad elegida, por eso se resuelve en el momento, no se
             // precalcula una vez).
-            arController.GetInfoText = (b, t) => books[b].Desc(t, AppState.Age);
+            if (arController != null) arController.GetInfoText = (b, t) => books[b].Desc(t, AppState.Age);
 
             StartCoroutine(InitialBuild());
         }
@@ -217,36 +267,66 @@ namespace ARDiabetes
             builtLandscape = Land;
             arPanels.Clear(); detallePanels.Clear();
             BuildCanvas();
-            pInicio = BuildInicio();
-            pBienvenida = BuildBienvenida();
-            pPerfil = BuildPerfil();
-            pMenu = BuildMenu();
+            stubs.Clear();
+            pInicio = Pantalla(0, BuildInicio);
+            pBienvenida = Pantalla(1, BuildBienvenida);
+            pPerfil = Pantalla(2, BuildPerfil);
+            pMenu = Pantalla(3, BuildMenu);
             for (int b = 0; b < 3; b++)
             {
                 int bi = b;
-                bookTemas[b] = BuildLibroTemas(bi);
-                bookDetalle[b] = BuildLibroDetalle(bi);
-                bookAR[b] = BuildLibroAR(bi);
-                detallePanels.Add(bookDetalle[b]);
-                arPanels.Add(bookAR[b]);
+                bookTemas[b] = Pantalla(4 + b * 3, () => BuildLibroTemas(bi));
+                bookDetalle[b] = Pantalla(5 + b * 3, () => BuildLibroDetalle(bi));
+                bookAR[b] = Pantalla(6 + b * 3, () => BuildLibroAR(bi));
+                if (!IsStub(bookDetalle[b])) detallePanels.Add(bookDetalle[b]);
+                if (!IsStub(bookAR[b])) arPanels.Add(bookAR[b]);
             }
-            pScanAR = BuildScanAR();
-            arPanels.Add(pScanAR);
-            pProgreso = BuildProgreso();
-            pInsignias = BuildInsignias();
-            pColeccion = BuildColeccion();
-            pConfig = BuildConfig();
-            pAyuda = BuildAyuda();
-            pJuegos = BuildJuegos();
-            for (int b = 0; b < 3; b++) bookQuiz[b] = BuildQuiz(b);
-            pMundos = BuildMundos();
+            pScanAR = Pantalla(13, BuildScanAR);
+            if (!IsStub(pScanAR)) arPanels.Add(pScanAR);
+            pProgreso = Pantalla(14, BuildProgreso);
+            pConfig = Pantalla(15, BuildConfig);
+            pAyuda = Pantalla(16, BuildAyuda);
+            pJuegos = Pantalla(17, BuildJuegos);
+            for (int b = 0; b < 3; b++)
+            {
+                int bi = b;
+                bookQuiz[b] = Pantalla(18 + b, () => BuildQuiz(bi));
+            }
+            pInsignias = Pantalla(21, BuildInsignias);
+            pColeccion = Pantalla(22, BuildColeccion);
+            pMundos = Pantalla(23, BuildMundos);
             panels = new RectTransform[] { pInicio, pBienvenida, pPerfil, pMenu,
                 bookTemas[0], bookDetalle[0], bookAR[0],
                 bookTemas[1], bookDetalle[1], bookAR[1],
                 bookTemas[2], bookDetalle[2], bookAR[2],
                 pScanAR, pProgreso, pConfig, pAyuda,
                 pJuegos, bookQuiz[0], bookQuiz[1], bookQuiz[2], pInsignias, pColeccion, pMundos };
-            ShowOnly(panels[Mathf.Clamp(shown, 0, panels.Length - 1)], false);
+            for (int i = 0; i < panels.Length; i++)
+                if (panels[i] != null) panels[i].name = NombresPanel[i];
+            int target = previewIndex >= 0 ? previewIndex :
+                destino >= 0 ? destino : (Incluye(shown) ? shown : FirstVista());
+            previewIndex = -1;
+            destino = -1;
+            ShowOnly(panels[Mathf.Clamp(target, 0, panels.Length - 1)], false);
+        }
+
+        RectTransform Pantalla(int indice, Func<RectTransform> build)
+        {
+            if (Incluye(indice)) return build();
+            var stub = UIKit.Node("Stub_" + indice.ToString("00") + "_" + EscenasPorPanel[indice], root);
+            stub.gameObject.SetActive(false);
+            stubs[stub] = indice;
+            return stub;
+        }
+
+        bool IsStub(RectTransform panel) => panel != null && stubs.ContainsKey(panel);
+        bool Incluye(int indice) => vistas == null || vistas.Length == 0 || Array.IndexOf(vistas, indice) >= 0;
+        int FirstVista() => vistas != null && vistas.Length > 0 ? vistas[0] : 0;
+        bool IncludesAny(int first, int last)
+        {
+            if (vistas == null || vistas.Length == 0) return true;
+            foreach (var i in vistas) if (i >= first && i <= last) return true;
+            return false;
         }
 
         // ---- Preview en el editor (ver las vistas sin darle Play) ----
@@ -256,7 +336,7 @@ namespace ARDiabetes
             if (font != null) UIKit.Font = font;
             if (books == null) BuildBooks(); // en modo edición Start() no corre
             currentBook = 0; currentTopic = 1;
-            shown = Mathf.Max(0, index);
+            previewIndex = Mathf.Max(0, index);
             BuildAll();
         }
 
