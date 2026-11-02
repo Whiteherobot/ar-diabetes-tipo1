@@ -24,6 +24,10 @@ namespace ARDiabetes
         public Sprite spAvatar1, spAvatar2, spAvatar3;
         public Sprite spIconFisio, spIconNutri, spIconClinico, spIconScan, spIconJuegos, spIconProgreso;
         public Sprite spStar;
+        public Sprite robotCoral, robotVerde, robotAzul;
+        public Sprite figScan, figGame, figChevron, figStar, figBack, figBook, figPlay;
+        public Sprite figInfo, figWarning, figSpeaker, figPause, figStop;
+        public Sprite figHome, figChart, figSettings, figHelp;
         public Sprite spPancreas;
         public GameObject pancreasModel, platoModel, glucoModel;
         public TMP_FontAsset font;
@@ -44,7 +48,7 @@ namespace ARDiabetes
         RectTransform root;
         RectTransform globalBg;
         Image flashOverlay;
-        RectTransform pInicio, pBienvenida, pPerfil, pMenu, pScanAR, pProgreso, pConfig, pAyuda, pJuegos, pInsignias, pColeccion;
+        RectTransform pInicio, pBienvenida, pPerfil, pMenu, pMundos, pScanAR, pProgreso, pConfig, pAyuda, pJuegos, pInsignias, pColeccion;
         List<string> pendingStartMsgs; // avisos de bonus (p.ej. racha de 7 días) detectados antes de tener UI armada
         RectTransform photoViewer;
         RawImage photoViewerImg;
@@ -74,6 +78,7 @@ namespace ARDiabetes
 
         TMP_Text starLabel, toast, holaText, nivelText;
         Image menuAvatar, nivelFill;
+        ScrollRect menuScroll;
 
         // --- Libros (5A/5B/5C) ---
         BookDef[] books;
@@ -95,7 +100,9 @@ namespace ARDiabetes
         // toast del botón "i" cuando todavía no se escaneó ningún marcador real.
         string currentArInfoText;
 
-        bool Land => Screen.width > Screen.height;
+        // Solo para capturas desde el editor (en batch Screen mide 640x480)
+        public static bool PreviewVertical;
+        bool Land => !PreviewVertical && Screen.width > Screen.height;
         static RectTransform R(Component c) => (RectTransform)c.transform;
 
         Sprite AvatarFor(AppState.AgeGroup g)
@@ -205,6 +212,7 @@ namespace ARDiabetes
 
         void BuildAll()
         {
+            UIKit.TextScale = AppState.FontScale;
             if (canvas != null) Destroy(canvas.gameObject);
             builtLandscape = Land;
             arPanels.Clear(); detallePanels.Clear();
@@ -231,12 +239,13 @@ namespace ARDiabetes
             pAyuda = BuildAyuda();
             pJuegos = BuildJuegos();
             for (int b = 0; b < 3; b++) bookQuiz[b] = BuildQuiz(b);
+            pMundos = BuildMundos();
             panels = new RectTransform[] { pInicio, pBienvenida, pPerfil, pMenu,
                 bookTemas[0], bookDetalle[0], bookAR[0],
                 bookTemas[1], bookDetalle[1], bookAR[1],
                 bookTemas[2], bookDetalle[2], bookAR[2],
                 pScanAR, pProgreso, pConfig, pAyuda,
-                pJuegos, bookQuiz[0], bookQuiz[1], bookQuiz[2], pInsignias, pColeccion };
+                pJuegos, bookQuiz[0], bookQuiz[1], bookQuiz[2], pInsignias, pColeccion, pMundos };
             ShowOnly(panels[Mathf.Clamp(shown, 0, panels.Length - 1)], false);
         }
 
@@ -245,8 +254,9 @@ namespace ARDiabetes
         {
             EditorClearPreview();
             if (font != null) UIKit.Font = font;
+            if (books == null) BuildBooks(); // en modo edición Start() no corre
             currentBook = 0; currentTopic = 1;
-            shown = Mathf.Clamp(index, 0, 20);
+            shown = Mathf.Max(0, index);
             BuildAll();
         }
 

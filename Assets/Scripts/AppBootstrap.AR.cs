@@ -14,7 +14,7 @@ namespace ARDiabetes
         RectTransform BuildArScreenCore(string name, Func<ModelViewer> viewerGetter, UnityEngine.Events.UnityAction onClose)
         {
             var p = Panel(name);
-            var bg = UIKit.Box(p, UIKit.Hex("14212E"), 4, "ARbg"); UIKit.Stretch(bg.rectTransform);
+            var bg = UIKit.Box(p, new Color(0, 0, 0, 0), 4, "ARbg"); UIKit.Stretch(bg.rectTransform);
 
             // Arrastrar en cualquier parte de la pantalla (menos los botones, que van encima)
             // rota la figura anclada — antes no se podía interactuar con el modelo real en AR.
@@ -29,19 +29,23 @@ namespace ARDiabetes
             var mv = viewerGetter();
             if (mv != null) { raw.texture = mv.Texture; raw.color = Color.white; }
             else raw.color = new Color(1, 1, 1, 0);
-            // Portrait: el modelo ocupa la franja superior (0.42-0.83) para dejar libre una franja
-            // propia abajo para infoCard, y que ambos convivan sin que la tarjeta tape el modelo.
-            // Landscape: el modelo queda igual (columna central) porque infoCard se ubica en el
-            // margen lateral libre, no debajo.
-            if (!Land) UIKit.Frac(raw.rectTransform, 0.06f, 0.42f, 0.94f, 0.83f);
-            else UIKit.Frac(raw.rectTransform, 0.26f, 0.14f, 0.74f, 0.92f);
+            if (!Land) UIKit.Frac(raw.rectTransform, 0.06f, 0.18f, 0.94f, 0.78f);
+            else UIKit.Frac(raw.rectTransform, 0.24f, 0.10f, 0.76f, 0.90f);
 
             var titleTxt = UIKit.Text(p, "", 50, Color.white);
-            UIKit.Frac(titleTxt, 0.10f, 0.905f, 0.90f, 0.97f);
-            var pill = UIKit.Box(p, new Color(1, 1, 1, 0.12f), 30, "Hint");
-            var hint = UIKit.Text(pill.transform, "Vista 3D · la cámara AR en vivo llega pronto", 30, UIKit.Hex("BFD3E6"), TextAlignmentOptions.Center, FontStyles.Normal);
-            UIKit.Stretch(hint.rectTransform, 24);
-            UIKit.Frac(pill.rectTransform, 0.14f, 0.855f, 0.86f, 0.90f);
+            UIKit.Frac(titleTxt, 0.08f, 0.90f, 0.72f, 0.96f);
+            titleTxt.alignment = TextAlignmentOptions.Left;
+            var pill = UIKit.Box(p, new Color(0, 0, 0, 0.48f), 30, "Hint");
+            var hint = UIKit.Text(pill.transform, "Apunta la cámara a tu libro", 15f * 2.77f, Color.white, TextAlignmentOptions.Center, FontStyles.Normal);
+            UIKit.Stretch(hint.rectTransform, 18);
+            UIKit.Frac(pill.rectTransform, 0.12f, 0.90f, 0.88f, 0.97f);
+
+            var surface = UIKit.Img(p, UIKit.Circle(), "Surface");
+            surface.color = new Color(0.93f, 0.56f, 0.68f, 0.18f);
+            surface.preserveAspect = true;
+            UIKit.Frac(surface, 0.27f, 0.36f, 0.73f, 0.55f);
+            var searching = UIKit.Text(p, "Buscando una superficie…", 16f * 2.77f, Color.white, TextAlignmentOptions.Center, FontStyles.Normal);
+            UIKit.Frac(searching, 0.18f, 0.28f, 0.82f, 0.35f);
 
             // Controles circulares
             // El texto de info ahora vive anclado en 3D junto al modelo (ARController.ToggleInfo),
@@ -52,9 +56,9 @@ namespace ARDiabetes
             {
                 if (arController != null && arController.HasSpawnedModel) arController.ToggleInfo();
                 else Toast(currentArInfoText);
-            }, 1f, 0.68f, 118, -82, 0);
-            CircleBtn(p, icAudio, UIKit.Nutri, Color.white, () => PlayNarration(), 1f, 0.57f, 118, -82, 0);
-            CircleBtn(p, icRotate, UIKit.Prog, Color.white, () => { if (modelViewer != null) modelViewer.ToggleSpin(); if (arController != null) arController.ToggleSpin(); }, 1f, 0.46f, 118, -82, 0);
+            }, 1f, 0.73f, 118, -82, 0);
+            CircleBtn(p, icAudio, UIKit.Nutri, Color.white, () => PlayNarration(), 1f, 0.62f, 118, -82, 0);
+            CircleBtn(p, icRotate, UIKit.Prog, Color.white, () => { if (modelViewer != null) modelViewer.ToggleSpin(); if (arController != null) arController.ToggleSpin(); }, 1f, 0.51f, 118, -82, 0);
             CircleBtn(p, icClose, UIKit.Juegos, Color.white, onClose, 0.5f, 0f, 130, -190, 150);
             CircleBtn(p, icCamera, UIKit.Clin, Color.white, () => StartCoroutine(FlashAndSave()), 0.5f, 0f, 176, 0, 160);
 
@@ -125,14 +129,9 @@ namespace ARDiabetes
             ScreenCapture.CaptureScreenshot(relFile);
             if (flashOverlay != null)
             {
-                float t = 0, dur = 0.22f;
-                while (t < dur)
-                {
-                    t += Time.unscaledDeltaTime;
-                    flashOverlay.color = new Color(1, 1, 1, Mathf.Sin(Mathf.Clamp01(t / dur) * Mathf.PI) * 0.85f);
-                    yield return null;
-                }
-                flashOverlay.color = new Color(1, 1, 1, 0);
+                flashOverlay.gameObject.SetActive(true);
+                yield return new WaitForSecondsRealtime(0.28f);
+                flashOverlay.gameObject.SetActive(false);
             }
             yield return new WaitForSeconds(0.25f);
             ShowARToast("Foto guardada");

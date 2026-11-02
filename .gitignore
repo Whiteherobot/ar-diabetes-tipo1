@@ -36,3 +36,6 @@ sysinfo.txt
 crashlytics-build.properties
 /*.apk
 /*.mp4
+
+# Capturas del editor (CapturaVistas)
+/Capturas/

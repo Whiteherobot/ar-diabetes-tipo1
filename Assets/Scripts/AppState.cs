@@ -25,6 +25,7 @@ namespace ARDiabetes
         const string KeyStreak = "ar_streak";
         const string KeyLastDay = "ar_last_day"; // días desde una fecha fija, para calcular racha
         const string KeyMuted = "ar_muted";
+        const string KeyFontScale = "ar_font_scale";
         const int TopicsTotal = 12; // 3 libros x 4 temas
         const int StarsPerLevel = 50;
         static readonly DateTime Epoch = new DateTime(2020, 1, 1);
@@ -45,6 +46,23 @@ namespace ARDiabetes
         {
             get => PlayerPrefs.GetInt(KeyMuted, 0) == 1;
             set { PlayerPrefs.SetInt(KeyMuted, value ? 1 : 0); PlayerPrefs.Save(); }
+        }
+
+        public static float FontScale
+        {
+            get
+            {
+                float value = PlayerPrefs.GetFloat(KeyFontScale, 1f);
+                return Mathf.Approximately(value, 1.15f) ? 1.15f :
+                    (Mathf.Approximately(value, 1.3f) ? 1.3f : 1f);
+            }
+            set
+            {
+                float normalized = Mathf.Approximately(value, 1.15f) ? 1.15f :
+                    (Mathf.Approximately(value, 1.3f) ? 1.3f : 1f);
+                PlayerPrefs.SetFloat(KeyFontScale, normalized);
+                PlayerPrefs.Save();
+            }
         }
 
         public static bool IsTopicSeen(int book, int topic) => GetBit(KeyTopicsMask, book, topic);

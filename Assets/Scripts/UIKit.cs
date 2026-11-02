@@ -14,22 +14,24 @@ namespace ARDiabetes
     public static class UIKit
     {
         // ---------- Paleta ----------
-        public static readonly Color Sky      = Hex("EAF4FB");
+        public static readonly Color Sky      = Hex("EDF8FF");
         public static readonly Color SkyTop   = Hex("D8ECFB");
         public static readonly Color Card     = Hex("FFFFFF");
-        public static readonly Color Navy     = Hex("1E3A5F");
-        public static readonly Color Blue     = Hex("3B82F6");
-        public static readonly Color BlueDark = Hex("2563EB");
+        public static readonly Color Navy     = Hex("20365A");
+        public static readonly Color Blue     = Hex("3289EC");
+        public static readonly Color BlueDark = Hex("2470C9");
         public static readonly Color Muted    = Hex("64748B");
         public static readonly Color Soft     = Hex("F1F6FB");
-        public static readonly Color Fisio    = Hex("7C6FD6");
-        public static readonly Color Nutri    = Hex("4CAF6E");
-        public static readonly Color Clin     = Hex("3E9CE6");
-        public static readonly Color Scan     = Hex("F0842B");
-        public static readonly Color Juegos   = Hex("E85C97");
-        public static readonly Color Prog     = Hex("F4B23E");
+        public static readonly Color Fisio    = Hex("8370DA");
+        public static readonly Color Nutri    = Hex("2FAE75");
+        public static readonly Color Clin     = Hex("3289EC");
+        public static readonly Color Scan     = Hex("FF9138");
+        public static readonly Color Juegos   = Hex("EE5997");
+        public static readonly Color Prog     = Hex("FFB830");
+        public static readonly Color Coral    = Hex("E94F58");
 
         public static TMP_FontAsset Font;
+        public static float TextScale = 1f;
 
         // ---------- Sprites generados ----------
         static readonly Dictionary<int, Sprite> _rounded = new Dictionary<int, Sprite>();
@@ -136,8 +138,9 @@ namespace ARDiabetes
             t.enableWordWrapping = true; t.raycastTarget = false;
             // Auto-ajuste: el texto nunca desborda su caja (clave para portrait/landscape).
             t.enableAutoSizing = true;
-            t.fontSizeMax = size;
-            t.fontSizeMin = Mathf.Max(10f, size * 0.35f);
+            float scaled = size * TextScale;
+            t.fontSizeMax = scaled;
+            t.fontSizeMin = Mathf.Max(10f, scaled * 0.35f);
             return t;
         }
 
@@ -197,6 +200,15 @@ namespace ARDiabetes
         {
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
             rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = new Vector2(x, -yFromTop);
+            rt.sizeDelta = new Vector2(w, h);
+        }
+
+        // Ancla arriba-izquierda; x e y se miden desde esa esquina en px (como en Figma).
+        public static void TopLeft(RectTransform rt, float x, float yFromTop, float w, float h)
+        {
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 1f);
             rt.anchoredPosition = new Vector2(x, -yFromTop);
             rt.sizeDelta = new Vector2(w, h);
         }

@@ -54,9 +54,11 @@ namespace ARDiabetes
             var flashGo = new GameObject("Flash", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             flashGo.transform.SetParent(canvas.transform, false);
             flashOverlay = flashGo.GetComponent<Image>();
-            flashOverlay.color = new Color(1, 1, 1, 0);
+            flashOverlay.color = Color.white;
             flashOverlay.raycastTarget = false;
             UIKit.Stretch(flashOverlay.rectTransform);
+            Anim.Destello(flashOverlay);
+            flashOverlay.gameObject.SetActive(false);
 
             // Visor de fotos: overlay modal (no es un "panel" de ShowOnly, flota encima de todo).
             photoViewer = UIKit.Node("PhotoViewer", canvas.transform);
@@ -84,6 +86,7 @@ namespace ARDiabetes
             UIKit.AddShadow(rewardBg, 40, 0.30f, -10, 10);
             var rewardStar = UIKit.Img(rewardBox, spStar, "Star"); rewardStar.preserveAspect = true;
             UIKit.Frac(rewardStar, 0.07f, 0.30f, 0.28f, 0.78f);
+            Anim.Estrella(rewardStar);
             rewardText = UIKit.Text(rewardBox, "", 34, UIKit.Hex("7A4B00"), TextAlignmentOptions.Left);
             UIKit.Frac(rewardText, 0.32f, 0.10f, 0.94f, 0.90f);
             rewardBox.gameObject.AddComponent<CanvasGroup>();
@@ -132,6 +135,7 @@ namespace ARDiabetes
             var rt = UIKit.Node(name, root);
             UIKit.Stretch(rt);
             rt.gameObject.AddComponent<CanvasGroup>();
+            Anim.PantallaEntra(rt);
             return rt;
         }
 
@@ -144,17 +148,67 @@ namespace ARDiabetes
             rt.anchoredPosition = Vector2.zero; rt.sizeDelta = new Vector2(size, size);
         }
 
+        RectTransform BuildRobotGroup(Transform parent)
+        {
+            // RobotGroup de Figma (280x188): las piezas van en fracciones para escalar con el rect
+            // El contenedor lo posiciona quien llama; adentro se conserva la proporción
+            var box = UIKit.Node("RobotGroup", parent);
+            var group = UIKit.Node("Trio", box);
+            var fit = group.gameObject.AddComponent<AspectRatioFitter>();
+            fit.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            fit.aspectRatio = 280f / 188f;
+
+            var left = UIKit.Img(group, robotCoral, "RobotBackCoral");
+            left.preserveAspect = true;
+            UIKit.Frac(left, .021f, .032f, .529f, .894f);
+            var right = UIKit.Img(group, robotAzul, "RobotBackAzul");
+            right.preserveAspect = true;
+            UIKit.Frac(right, .479f, .032f, .986f, .894f);
+            var front = UIKit.Img(group, robotVerde, "RobotFront");
+            front.preserveAspect = true;
+            UIKit.Frac(front, .191f, -.064f, .809f, .989f);
+            return box;
+        }
+
+        RectTransform BuildHeaderBar(RectTransform p, string title, Color color, Sprite icon,
+                                     UnityEngine.Events.UnityAction back)
+        {
+            const float S = 2.77f;
+            float h = 90f * S;
+            var bar = UIKit.Box(p, color, Mathf.RoundToInt(28f * S), "HeaderBar");
+            UIKit.Top(bar.rectTransform, 0f, 0f, 1080f, h);
+            bar.gameObject.AddComponent<Mask>();
+
+            var backButton = UIKit.Button(bar.transform, "", new Color(1, 1, 1, 0), Color.white,
+                16, back, 22, false);
+            UIKit.Top(R(backButton), -465f, 15f * S, 60f * S, 60f * S);
+            var backIcon = UIKit.Img(backButton.transform, figBack, "Back");
+            backIcon.color = Color.white;
+            backIcon.preserveAspect = true;
+            UIKit.Stretch(backIcon.rectTransform, 14f * S);
+
+            var titleIcon = UIKit.Img(bar.transform, icon, "Icon");
+            titleIcon.color = Color.white;
+            titleIcon.preserveAspect = true;
+            UIKit.Top(titleIcon.rectTransform, -225f, 25f * S, 32f * S, 32f * S);
+            var label = UIKit.Text(bar.transform, title, 20f * S, Color.white);
+            label.enableWordWrapping = false;
+            UIKit.Top(label.rectTransform, 55f, 21f * S, 220f * S, 48f * S);
+            return bar.rectTransform;
+        }
+
         // Barra inferior de accesos rápidos (Inicio / Progreso / Config / Ayuda)
         void BuildBottomNav(RectTransform p, int active)
         {
-            var bar = UIKit.Box(p, UIKit.Card, 40, "BottomNav");
+            const float S = 2.77f;
+            var bar = UIKit.Box(p, UIKit.Card, Mathf.RoundToInt(22f * S), "BottomNav");
             var brt = bar.rectTransform;
             brt.anchorMin = new Vector2(0, 0); brt.anchorMax = new Vector2(1, 0); brt.pivot = new Vector2(0.5f, 0);
-            float h = 150f;
-            brt.offsetMin = new Vector2(40, 22); brt.offsetMax = new Vector2(-40, 22 + h);
-            UIKit.AddShadow(bar, 40, 0.12f, -6, 6);
+            float h = 82f * S;
+            brt.offsetMin = new Vector2(0, 0); brt.offsetMax = new Vector2(0, h);
+            UIKit.AddShadow(bar, Mathf.RoundToInt(22f * S), 0.14f, -6, 8);
 
-            Sprite[] ic = { icHome, icChart, icGear, icQuestion };
+            Sprite[] ic = { figHome, figChart, figSettings, figHelp };
             string[] lb = { "Inicio", "Progreso", "Config", "Ayuda" };
             System.Action[] act =
             {
@@ -173,7 +227,7 @@ namespace ARDiabetes
                 rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
                 var g = UIKit.Img(b.transform, ic[i], "Ico"); g.color = on ? UIKit.Blue : UIKit.Muted;
                 UIKit.Frac(g, 0.32f, 0.42f, 0.68f, 0.86f);
-                var t = UIKit.Text(b.transform, lb[i], 26, on ? UIKit.Blue : UIKit.Muted);
+                var t = UIKit.Text(b.transform, lb[i], 12f * S, on ? UIKit.Blue : UIKit.Muted);
                 UIKit.Frac(t, 0.05f, 0.10f, 0.95f, 0.40f);
             }
         }
@@ -184,14 +238,15 @@ namespace ARDiabetes
             shown = Array.IndexOf(panels, panel);
             if (shown < 0) shown = 0;
             if (audioSrc != null) audioSrc.Stop();
-            foreach (var p in panels) if (p != null) p.gameObject.SetActive(p == panel);
+            foreach (var p in panels) if (p != null) p.gameObject.SetActive(false);
+            if (panel != null) panel.gameObject.SetActive(true);
 
             if (panel == pMenu)
             {
                 if (starLabel != null) starLabel.text = AppState.Stars.ToString();
                 if (menuAvatar != null) menuAvatar.sprite = AvatarFor(AppState.Age);
                 if (holaText != null) holaText.text = AppState.GreetingFor(AppState.Age);
-                if (nivelText != null) nivelText.text = "Nivel " + AppState.Level + " · Racha " + AppState.Streak;
+                if (nivelText != null) nivelText.text = "Nivel " + AppState.Level;
                 if (nivelFill != null) UIKit.Frac(nivelFill, 0f, 0f, Mathf.Clamp01(AppState.LevelProgress), 1f);
             }
             else if (panel == pProgreso) RefreshProgreso();
@@ -232,17 +287,17 @@ namespace ARDiabetes
                     var names = new List<string>();
                     if (books[book].Markers != null)
                         foreach (var m in books[book].Markers) if (m != null) names.Add(m.name);
-                    arController.SetScope(names);
+                    arController?.SetScope(names);
                     if (arTitle != null) arTitle.text = books[book].TopicTitle[currentTopic];
                     currentArInfoText = books[book].Desc(currentTopic, AppState.Age);
                 }
                 else
                 {
-                    modelViewer = null; arController.SetScope(null);
+                    modelViewer = null; arController?.SetScope(null);
                     if (arTitle != null) arTitle.text = "Escanear página";
                     currentArInfoText = "Apunta la cámara a cualquier página de los libros para ver su modelo 3D.";
                 }
-                arController.Activate();
+                arController?.Activate(); // null en el preview del editor
             }
             else
             {
@@ -259,7 +314,7 @@ namespace ARDiabetes
             // apagan para no gastar GPU en pantallas donde ni siquiera son visibles.
             for (int i = 0; i < modelViewers.Length; i++)
                 modelViewers[i]?.SetActive(modelViewers[i] == modelViewer);
-            if (animate) { StartCoroutine(FadeIn(panel)); }
+            if (animate) panel.GetComponent<Anim>()?.Reproducir();
         }
 
         IEnumerator FadeIn(RectTransform panel)
@@ -281,13 +336,26 @@ namespace ARDiabetes
             panel.anchoredPosition = Vector2.zero;
         }
 
-        Image ProgressBar(Transform parent, float value, float x0, float y0, float x1, float y1, Color? color = null)
+        Image ProgressBar(Transform parent, float value, float x0, float y0, float x1, float y1,
+                          Color? color = null, float animDur = 0f)
         {
             var track = UIKit.Box(parent, UIKit.Hex("E2ECF5"), 16, "Track");
             UIKit.Frac(track.rectTransform, x0, y0, x1, y1);
             var fill = UIKit.Box(track.transform, color ?? UIKit.Nutri, 16, "Fill");
             UIKit.Frac(fill.rectTransform, 0f, 0f, Mathf.Clamp01(value), 1f);
+            if (animDur > 0f) Anim.Llenar(fill.GetComponent<Image>(), animDur);
             return fill;
+        }
+
+        void SetProgress(Image fill, float value)
+        {
+            if (fill == null) return;
+            var anim = fill.GetComponent<Anim>();
+            float target = Mathf.Clamp01(value);
+            if (anim == null) { UIKit.Frac(fill, 0f, 0f, target, 1f); return; }
+            UIKit.Frac(fill, 0f, 0f, 0f, 1f);
+            anim.FijarLlenado(target);
+            anim.Reproducir();
         }
 
         // Botón circular con icono (para controles del visor AR y accesos de Progreso).

@@ -53,6 +53,25 @@ public static class ProjectSetup
         boot.spIconJuegos  = L("Assets/Imagenes/Diseño/Botones/Icon_juegos 1.png");
         boot.spIconProgreso= L("Assets/Imagenes/UI/ic_chart.png"); // barras (reemplaza la llamita)
         boot.spStar        = L("Assets/Imagenes/Diseño/Botones/Icon_Estrella.png");
+        boot.robotCoral    = L("Assets/Imagenes/Diseño/Robots/Robot_coral.png");
+        boot.robotVerde    = L("Assets/Imagenes/Diseño/Robots/Robot_verde.png");
+        boot.robotAzul     = L("Assets/Imagenes/Diseño/Robots/Robot_azul.png");
+        boot.figScan       = L("Assets/Imagenes/UI/Figma/ic_fig_scan.png");
+        boot.figGame       = L("Assets/Imagenes/UI/Figma/ic_fig_game.png");
+        boot.figChevron    = L("Assets/Imagenes/UI/Figma/ic_fig_chevron.png");
+        boot.figStar       = L("Assets/Imagenes/UI/Figma/ic_fig_star.png");
+        boot.figBack       = L("Assets/Imagenes/UI/Figma/ic_fig_back.png");
+        boot.figBook       = L("Assets/Imagenes/UI/Figma/ic_fig_book.png");
+        boot.figPlay       = L("Assets/Imagenes/UI/Figma/ic_fig_play.png");
+        boot.figInfo       = L("Assets/Imagenes/UI/Figma/ic_fig_info.png");
+        boot.figWarning    = L("Assets/Imagenes/UI/Figma/ic_fig_warning.png");
+        boot.figSpeaker    = L("Assets/Imagenes/UI/Figma/ic_fig_speaker.png");
+        boot.figPause      = L("Assets/Imagenes/UI/Figma/ic_fig_pause.png");
+        boot.figStop       = L("Assets/Imagenes/UI/Figma/ic_fig_stop.png");
+        boot.figHome       = L("Assets/Imagenes/UI/Figma/ic_fig_home.png");
+        boot.figChart      = L("Assets/Imagenes/UI/Figma/ic_fig_chart.png");
+        boot.figSettings   = L("Assets/Imagenes/UI/Figma/ic_fig_settings.png");
+        boot.figHelp       = L("Assets/Imagenes/UI/Figma/ic_fig_help.png");
         boot.spPancreas    = L("Assets/Imagenes/Diseño/Icon_Pancreas.png");
         boot.pancreasModel = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Imagenes/QR/Pancreas.fbx");
         boot.platoModel    = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Imagenes/QR/Plato.fbx");
@@ -91,6 +110,10 @@ public static class ProjectSetup
 
         boot.musicaFondo = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Musica/musica_fondo.wav");
         if (boot.musicaFondo == null) Debug.LogWarning("[ProjectSetup] musica_fondo.wav no encontrado");
+
+        // Fuente Nunito (se crea con ARDiabetes/Crear fuente Nunito)
+        boot.font = AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>(FuenteNunito.RutaRegular);
+        if (boot.font == null) Debug.LogWarning("[ProjectSetup] Nunito SDF no encontrada; usa ARDiabetes/Crear fuente Nunito");
 
         boot.markersFisio = LoadMarkers("qr_diabetes", "qr_pancreas", "qr_insulina", "qr_funciona");
         boot.markersNutri = LoadMarkers("qr_nutri_plato", "qr_nutri_carbohidratos", "qr_nutri_recomendados", "qr_nutri_habitos");
