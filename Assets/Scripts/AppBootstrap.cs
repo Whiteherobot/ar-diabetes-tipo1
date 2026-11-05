@@ -89,6 +89,7 @@ namespace ARDiabetes
         int previewIndex = -1;
         bool builtLandscape;
         bool captureStarted;
+        static readonly HashSet<int> capturados = new HashSet<int>();
         static int quizBook, quizQ, quizScore;
         int quizEstrellasInicio;
         Dictionary<string, AudioClip> vocesPorNombre;

@@ -195,17 +195,30 @@ namespace ARDiabetes
             string dir = Environment.GetEnvironmentVariable("ARCAP_DIR");
             if (string.IsNullOrEmpty(dir)) dir = Application.persistentDataPath;
             string suf = Land ? "_land" : "_port";
+            // ARCAP_ESCALA=2 saca la captura al doble de la ventana (p. ej. 540x960 -> 1080x1920).
+            int.TryParse(Environment.GetEnvironmentVariable("ARCAP_ESCALA"), out int escala);
+            if (escala < 1) escala = 1;
             currentBook = 0; currentTopic = 1;
             yield return new WaitForSeconds(1f);
+            // La app está dividida en escenas: los paneles de otra escena son stubs que la cargan.
+            // Se capturan los de esta escena y luego se salta a la siguiente escena pendiente.
             for (int i = 0; i < panels.Length; i++)
             {
+                if (panels[i] == null || stubs.ContainsKey(panels[i]) || capturados.Contains(i)) continue;
                 ShowOnly(panels[i], false);
                 yield return new WaitForSeconds(0.8f); // dejar asentar animaciones de entrada
                 yield return new WaitForEndOfFrame();
-                ScreenCapture.CaptureScreenshot(System.IO.Path.Combine(dir, "cap_" + panels[i].name + suf + ".png"));
+                ScreenCapture.CaptureScreenshot(System.IO.Path.Combine(dir, "cap_" + panels[i].name + suf + ".png"), escala);
+                capturados.Add(i);
                 yield return new WaitForSeconds(0.3f);
             }
             yield return new WaitForSeconds(0.4f);
+            for (int i = 0; i < panels.Length; i++)
+                if (panels[i] != null && stubs.TryGetValue(panels[i], out var dst) && !capturados.Contains(dst))
+                {
+                    ShowOnly(panels[i], false);
+                    yield break;
+                }
             Application.Quit();
         }
     }
