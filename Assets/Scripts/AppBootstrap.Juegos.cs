@@ -1,11 +1,12 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
 namespace ARDiabetes
 {
-    // Pantalla 6) JUEGOS Y RETOS: hub por libro + quiz de 3-4 preguntas (Choice/Matching/MultiSelect).
+    // Pantalla 6) JUEGOS Y RETOS: hub por libro + misión de 3 preguntas.
     public partial class AppBootstrap
     {
         // "Libro Fisiológico" -> "Misión Fisiológica" (concordancia como en el diseño)
@@ -14,62 +15,105 @@ namespace ARDiabetes
             return "Misión " + libro.Replace("Libro ", "").Replace("Fisiológico", "Fisiológica").Replace("Clínico", "Clínica");
         }
 
+        Sprite IconoMision(int book) => book == 0 ? figTemas[1] : book == 1 ? figTemas[6] : figKit;
+
         RectTransform BuildJuegos()
         {
             var p = Panel("6_Juegos");
             const float S = 2.77f;
-            bool land = Land;
-            var viewport = UIKit.Node("GamesViewport", p);
-            viewport.anchorMin = Vector2.zero; viewport.anchorMax = Vector2.one;
-            viewport.offsetMin = new Vector2(0, 82f * S); viewport.offsetMax = Vector2.zero;
-            viewport.gameObject.AddComponent<RectMask2D>();
-            var vi = viewport.gameObject.AddComponent<Image>(); vi.color = new Color(1, 1, 1, 0);
-            var content = UIKit.Node("GamesContent", viewport);
-            content.anchorMin = new Vector2(.5f, 1); content.anchorMax = new Vector2(.5f, 1);
-            content.pivot = new Vector2(.5f, 1); float w = land ? 1000 : 1080; content.sizeDelta = new Vector2(w, 2200);
-            var scroll = viewport.gameObject.AddComponent<ScrollRect>();
-            scroll.content = content; scroll.viewport = viewport; scroll.horizontal = false; scroll.vertical = true;
-            scroll.movementType = ScrollRect.MovementType.Elastic; scroll.inertia = true;
-            float y = 0;
-            var hero = UIKit.Box(content, UIKit.Juegos, 0, "GamesHero"); UIKit.Top(hero.rectTransform, 0, y, w, 310f * S); hero.gameObject.AddComponent<Mask>();
-            var blob = UIKit.Img(hero.transform, UIKit.Circle(), "Blob"); blob.color = new Color(1, 1, 1, .12f); UIKit.Top(blob.rectTransform, w / 2f - 85f * S, -55f * S, 190f * S, 190f * S);
-            var kicker = UIKit.Text(hero.transform, "MISIONES DEL CONOCIMIENTO", 12f * S, Color.white, TextAlignmentOptions.Left); kicker.fontStyle = FontStyles.Bold; UIKit.TopLeft(kicker.rectTransform, 22f * S, 40f * S, 345f * S, 26f * S);
-            var heroTitle = UIKit.Text(hero.transform, "¡Vamos a jugar!", 31f * S, Color.white, TextAlignmentOptions.Left); UIKit.TopLeft(heroTitle.rectTransform, 22f * S, 78f * S, 390f * S, 50f * S);
-            var heroSub = UIKit.Text(hero.transform, "Completa misiones y descubre cuánto has aprendido.", 17f * S, Color.white, TextAlignmentOptions.Left, FontStyles.Normal); UIKit.TopLeft(heroSub.rectTransform, 22f * S, 135f * S, 205f * S, 70f * S);
-            var heroRobots = BuildRobotGroup(hero.transform); UIKit.TopLeft(heroRobots, w - 315f * S, 205f * S, 330f * S, 150f * S);
-            var spark = UIKit.Img(hero.transform, spStar, "Star"); spark.color = UIKit.Hex("FFF1A8"); spark.preserveAspect = true; UIKit.Top(spark.rectTransform, w / 2f + 220f * S, 38f * S, 34f * S, 34f * S);
-            y += 340f * S;
-            var missionTitle = UIKit.Text(content, "Elige tu misión", 24f * S, UIKit.Navy, TextAlignmentOptions.Left); UIKit.Top(missionTitle.rectTransform, 0, y, w - 40f * S, 42f * S); y += 67f * S;
+            var fondo = UIKit.Img(p, null, "Fondo"); fondo.color = UIKit.Hex("FFF5FA"); UIKit.Stretch(fondo.rectTransform);
+            float w = Land ? 1000 : 1080, cardW = w - 40f * S;
+            var content = BuildAreaScroll(p, "Games", 82f * S, w);
+            ((RectTransform)content.parent).offsetMax = Vector2.zero;
+
+            float heroH = 310f * S;
+            var hero = UIKit.Box(content, UIKit.Juegos, 2, "GamesHero");
+            UIKit.Top(hero.rectTransform, 0, 0, w, heroH);
+            hero.gameObject.AddComponent<Mask>();
+            var c1 = UIKit.Img(hero.transform, UIKit.Circle(), "Circulo"); c1.color = new Color(1, 1, 1, .11f);
+            UIKit.TopLeft(c1.rectTransform, w - 115f * S, -55f * S, 190f * S, 190f * S);
+            var c2 = UIKit.Img(hero.transform, UIKit.Circle(), "Circulo"); c2.color = new Color(1, 1, 1, .11f);
+            UIKit.TopLeft(c2.rectTransform, -55f * S, heroH - 70f * S, 135f * S, 135f * S);
+            var robots = BuildRobotGroup(hero.transform);
+            UIKit.TopLeft(robots, w - 179f * S, 204f * S, 196f * S, 132f * S);
+            var k = UIKit.Text(hero.transform, "MISIONES DEL CONOCIMIENTO", 12f * S, Color.white, TextAlignmentOptions.Left);
+            k.characterSpacing = 8f;
+            UIKit.TopLeft(k.rectTransform, 23f * S, 42f * S, w - 110f * S, 18f * S);
+            var t = UIKit.Text(hero.transform, "¡Vamos a jugar!", 31f * S, Color.white, TextAlignmentOptions.Left);
+            UIKit.TopLeft(t.rectTransform, 23f * S, 66f * S, w - 46f * S, 40f * S);
+            var sb = UIKit.Text(hero.transform, "Completa misiones y descubre cuánto has aprendido.", 17f * S, UIKit.Hex("FFF2F7"), TextAlignmentOptions.Left, FontStyles.Normal);
+            sb.fontWeight = FontWeight.Bold;
+            UIKit.Interlinea(sb, 1.38f);
+            UIKit.TopLeft(sb.rectTransform, 23f * S, 108f * S, 300f * S, 52f * S);
+            var chispa1 = UIKit.Img(hero.transform, figStar, "Estrella"); chispa1.color = UIKit.Hex("FFF1A8"); chispa1.preserveAspect = true;
+            UIKit.TopLeft(chispa1.rectTransform, w - 57f * S, 33f * S, 24f * S, 24f * S);
+            chispa1.rectTransform.localRotation = Quaternion.Euler(0, 0, 10f);
+            var chispa2 = UIKit.Img(hero.transform, figStar, "Estrella"); chispa2.color = Color.white; chispa2.preserveAspect = true;
+            UIKit.TopLeft(chispa2.rectTransform, 26f * S, heroH - 48f * S, 16f * S, 16f * S);
+            chispa2.rectTransform.localRotation = Quaternion.Euler(0, 0, -13f);
+
+            float y = heroH + 27f * S;
+            var missionTitle = UIKit.Text(content, "Elige tu misión", 24f * S, UIKit.Navy, TextAlignmentOptions.Left);
+            UIKit.Top(missionTitle.rectTransform, 0, y, cardW, 34f * S);
+            y += 49f * S;
+
             var count = new TMP_Text[3];
-            var missionFills = new Image[3];
+            var fills = new Image[3];
+            string[] descs = { "Descubre cómo funciona tu cuerpo", "Explora el mundo de los alimentos", "Aprende a cuidar tu salud" };
+            float cardH = 240f * S;
             for (int i = 0; i < 3; i++)
             {
                 var b = books[i];
                 int idx = i;
-                var btn = UIKit.Button(content, "", b.Accent, Color.white, 30, () => { quizBook = idx; ShowOnly(bookQuiz[idx]); });
-                float cardW = w - 40f * S;
-                UIKit.Top(R(btn), 0, y, cardW, 240f * S);
+                bool inverso = i == 1;
+                UnityEngine.Events.UnityAction abrir = () => { quizBook = idx; ShowOnly(bookQuiz[idx]); };
+                var btn = UIKit.Button(content, "", b.Accent, Color.white, Mathf.RoundToInt(24f * S), abrir);
+                UIKit.Top(R(btn), 0, y, cardW, cardH);
+                UIKit.AddShadow(btn.GetComponent<Image>(), Mathf.RoundToInt(24f * S), .14f, -7, 7);
                 btn.gameObject.AddComponent<Mask>();
-                UIKit.AddShadow(btn.GetComponent<Image>(), 30, 0.12f, -6, 6);
-                btn.gameObject.AddComponent<Appear>().delay = 0.05f * i;
-                var kickerM = UIKit.Text(btn.transform, "MISIÓN " + (i + 1), 12f * S, Color.white, TextAlignmentOptions.Left); UIKit.TopLeft(kickerM.rectTransform, 22f * S, 25f * S, 190f * S, 26f * S);
-                var tl = UIKit.Text(btn.transform, MisionNombre(b.Title), 22f * S, Color.white, TextAlignmentOptions.Left); UIKit.TopLeft(tl.rectTransform, 22f * S, 53f * S, 215f * S, 34f * S); tl.enableWordWrapping = false;
-                var descs = new[] { "Descubre cómo funciona tu cuerpo", "Explora el mundo de los alimentos", "Aprende a cuidar tu salud" };
-                var desc = UIKit.Text(btn.transform, descs[i], 15f * S, Color.white, TextAlignmentOptions.Left, FontStyles.Normal); UIKit.TopLeft(desc.rectTransform, 22f * S, 105f * S, 170f * S, 45f * S);
-                var cnt = UIKit.Text(btn.transform, "Lista para comenzar", 13f * S, Color.white, TextAlignmentOptions.Left, FontStyles.Bold); UIKit.TopLeft(cnt.rectTransform, 22f * S, 139f * S, 260f * S, 25f * S);
-                var missionFill = ProgressBar(btn.transform, 0f, .06f, .28f, .57f, .35f, Color.white, .8f);
-                var play = UIKit.Button(btn.transform, "JUGAR", Color.white, b.Accent, Mathf.RoundToInt(14f * S), () => { quizBook = idx; ShowOnly(bookQuiz[idx]); }, Mathf.RoundToInt(14f * S), true); UIKit.TopLeft(R(play), 22f * S, 188f * S, 110f * S, 40f * S);
-                var playIcon = UIKit.Img(play.transform, figPlay, "Play"); playIcon.color = b.Accent; playIcon.preserveAspect = true; UIKit.Top(playIcon.rectTransform, 35f * S, 202f * S, 18f * S, 18f * S);
-                var missionRobot = UIKit.Img(btn.transform, i == 0 ? robotCoral : (i == 1 ? robotVerde : robotAzul), "Robot"); missionRobot.preserveAspect = true;
-                UIKit.TopLeft(missionRobot.rectTransform, cardW - 145f * S, 30f * S, 145f * S, 205f * S);
-                var reward = UIKit.Box(btn.transform, Color.white, 99, "Reward"); UIKit.TopLeft(reward.rectTransform, cardW - 95f * S, 15f * S, 75f * S, 42f * S);
-                var rewardIcon = UIKit.Img(reward.transform, spStar, "Star"); rewardIcon.color = UIKit.Prog; rewardIcon.preserveAspect = true; UIKit.Frac(rewardIcon, .12f, .20f, .40f, .80f);
-                var rewardText = UIKit.Text(reward.transform, "15", 16f * S, UIKit.Hex("654D13"), TextAlignmentOptions.Right); UIKit.Frac(rewardText, .42f, .05f, .92f, .95f);
-                count[i] = cnt;
-                missionFills[i] = missionFill;
-                y += 258f * S;
+                var deco = UIKit.Img(btn.transform, UIKit.Circle(), "Decor"); deco.color = new Color(1, 1, 1, .1f);
+                UIKit.TopLeft(deco.rectTransform, cardW - 100f * S, cardH - 85f * S, 170f * S, 170f * S);
+                var robot = UIKit.Img(btn.transform, RobotDeLibro(i), "Robot"); robot.preserveAspect = true;
+                UIKit.TopLeft(robot.rectTransform, inverso ? -18f * S : cardW - 145f * S, 62f * S, 163f * S, 198f * S);
+                UIKit.SombraImagen(robot, .18f, 7f * S);
+
+                float x = (inverso ? 129f : 22f) * S;
+                var small = UIKit.Text(btn.transform, "MISIÓN " + (i + 1), 12f * S, new Color(1, 1, 1, .86f), TextAlignmentOptions.Left);
+                small.characterSpacing = 8f;
+                UIKit.TopLeft(small.rectTransform, x, 25f * S, 180f * S, 18f * S);
+                var tl = UIKit.Text(btn.transform, MisionNombre(b.Title), 22f * S, Color.white, TextAlignmentOptions.Left);
+                tl.enableWordWrapping = false;
+                UIKit.TopLeft(tl.rectTransform, x, 47f * S, 210f * S, 30f * S);
+                var desc = UIKit.Text(btn.transform, descs[i], 15f * S, new Color(1, 1, 1, .94f), TextAlignmentOptions.Left, FontStyles.Normal);
+                desc.fontWeight = FontWeight.SemiBold;
+                UIKit.Interlinea(desc, 1.35f);
+                UIKit.TopLeft(desc.rectTransform, x, 82f * S, 185f * S, 44f * S);
+                var cnt = UIKit.Text(btn.transform, "Lista para comenzar", 13f * S, Color.white, TextAlignmentOptions.Left);
+                UIKit.TopLeft(cnt.rectTransform, x, 132f * S, 180f * S, 18f * S);
+                var track = UIKit.Box(btn.transform, new Color(1, 1, 1, .28f), Mathf.RoundToInt(4f * S), "Track");
+                UIKit.TopLeft(track.rectTransform, x, 156f * S, 165f * S, 8f * S);
+                var fill = UIKit.Box(track.transform, Color.white, Mathf.RoundToInt(4f * S), "Fill");
+                UIKit.Frac(fill.rectTransform, 0f, 0f, 0f, 1f);
+                var play = UIKit.Button(btn.transform, "", Color.white, b.Accent, Mathf.RoundToInt(13f * S), abrir, 10);
+                UIKit.TopLeft(R(play), x, 176f * S, 96f * S, 42f * S);
+                var playTxt = UIKit.Text(play.transform, "JUGAR", 14f * S, b.Accent, TextAlignmentOptions.Left);
+                UIKit.TopLeft(playTxt.rectTransform, 14f * S, 11f * S, 56f * S, 20f * S);
+                var playIco = UIKit.Img(play.transform, figPlay, "Play"); playIco.color = b.Accent; playIco.preserveAspect = true;
+                UIKit.TopLeft(playIco.rectTransform, 66f * S, 12.5f * S, 17f * S, 17f * S);
+
+                var reward = UIKit.Box(btn.transform, Color.white, Mathf.RoundToInt(18f * S), "Reward");
+                UIKit.TopLeft(reward.rectTransform, inverso ? 17f * S : cardW - 76f * S, 15f * S, 59f * S, 37f * S);
+                var rewardIco = UIKit.Img(reward.transform, figStar, "Star"); rewardIco.color = UIKit.Prog; rewardIco.preserveAspect = true;
+                UIKit.TopLeft(rewardIco.rectTransform, 10f * S, 9.5f * S, 18f * S, 18f * S);
+                var rewardTxt = UIKit.Text(reward.transform, "15", 14f * S, UIKit.Hex("5C4300"), TextAlignmentOptions.Left);
+                UIKit.TopLeft(rewardTxt.rectTransform, 32f * S, 8f * S, 24f * S, 21f * S);
+
+                count[i] = cnt; fills[i] = fill;
+                btn.gameObject.AddComponent<Appear>().delay = .05f * i;
+                y += cardH + 19f * S;
             }
-            p.gameObject.AddComponent<JuegosRefs>().Set(count, missionFills);
+            content.sizeDelta = new Vector2(w, y + 9f * S);
+            p.gameObject.AddComponent<JuegosRefs>().Set(count, fills);
             BuildBottomNav(p, -1);
             return p;
         }
@@ -81,518 +125,523 @@ namespace ARDiabetes
             if (refs == null) return;
             for (int i = 0; i < 3; i++)
             {
-                if (refs.Count[i] != null) refs.Count[i].text = AppState.QuizCorrectCount(i) + "/" + books[i].Quiz.Length + " correctas";
-                if (refs.Fill != null && refs.Fill[i] != null)
-                    SetProgress(refs.Fill[i], (float)AppState.QuizCorrectCount(i) / books[i].Quiz.Length);
+                float avance = (float)AppState.QuizCorrectCount(i) / books[i].Quiz.Length;
+                if (refs.Count[i] != null) refs.Count[i].text = avance > 0f ? Mathf.RoundToInt(avance * 100f) + "% completado" : "Lista para comenzar";
+                if (refs.Fill != null && refs.Fill[i] != null) SetProgress(refs.Fill[i], avance);
             }
         }
 
-        static readonly Color GreenOk = UIKit.Hex("DFF7E9");
-        static readonly Color RedBad = UIKit.Hex("FDE5E5");
-        static readonly Color BlueSel = UIKit.Hex("EAF5FF");
+        static readonly Color VerdeBorde = UIKit.Hex("66C795"), VerdeFondo = UIKit.Hex("DFF7E9");
+        static readonly Color RojoBorde = UIKit.Hex("EE7B7B"), RojoFondo = UIKit.Hex("FDE5E5");
 
         RectTransform BuildQuiz(int book)
         {
+            const float S = 2.77f;
             var b = books[book];
             var p = Panel(book + "_Quiz");
-            bool land = Land;
-            BuildHeaderBar(p, MisionNombre(b.Title), b.Accent, b.HeroIcon, () => ShowOnly(pJuegos));
+            var fondo = UIKit.Img(p, null, "Fondo"); fondo.color = UIKit.Hex("F4F9FD"); UIKit.Stretch(fondo.rectTransform);
+            BuildHeaderBar(p, MisionNombre(b.Title), b.Accent, IconoMision(book), () => ShowOnly(pJuegos), RobotDeLibro(book));
+            float w = Land ? 1000 : 1080, cardW = w - 40f * S;
+            var content = BuildAreaScroll(p, "Quiz", 0f, w);
+            var refs = p.gameObject.AddComponent<QuizRefs>();
+            refs.Content = content;
 
-            // Cuántas opciones/pares necesita CADA tipo de juego en este libro (0 = ese tipo no
-            // aparece en este libro). Se construye solo lo que hace falta, ya posicionado y con
-            // su sombra final — así se evita el bug de sombras "flotantes" por reposicionar
-            // después de llamar AddShadow.
-            int mcCount = 0, pairCount = 0, msCount = 0;
-            foreach (var g in b.Quiz)
+            var pregunta = UIKit.Node("Pregunta", content);
+            UIKit.Top(pregunta, 0, 0, w, 10f);
+            refs.Pregunta = pregunta;
+
+            refs.Progress = UIKit.Text(pregunta, "", 17f * S, UIKit.Navy, TextAlignmentOptions.Left);
+            UIKit.Top(refs.Progress.rectTransform, 0, 20f * S, cardW, 25f * S);
+            refs.ProgressType = UIKit.Text(pregunta, "", 14f * S, UIKit.Hex("637B93"), TextAlignmentOptions.Right);
+            UIKit.Top(refs.ProgressType.rectTransform, 0, 20f * S, cardW, 25f * S);
+            var track = UIKit.Box(pregunta, UIKit.Hex("DFE9EF"), Mathf.RoundToInt(6f * S), "Track");
+            UIKit.Top(track.rectTransform, 0, 53f * S, cardW, 12f * S);
+            refs.ProgressFill = UIKit.Box(track.transform, b.Accent, Mathf.RoundToInt(6f * S), "Fill");
+            UIKit.Frac(refs.ProgressFill.rectTransform, 0f, 0f, 0f, 1f);
+
+            var coachRobot = UIKit.Img(pregunta, RobotDeLibro(book), "Coach"); coachRobot.preserveAspect = true;
+            refs.Coach = coachRobot.rectTransform;
+            var burbuja = UIKit.Box(pregunta, Color.white, Mathf.RoundToInt(15f * S), "Burbuja");
+            refs.CoachBurbuja = burbuja.rectTransform;
+            refs.BurbujaSombra = UIKit.AddShadow(burbuja, Mathf.RoundToInt(15f * S), .08f, -3, 3).rectTransform;
+            refs.CoachTxt = UIKit.Text(burbuja.transform, "", 15f * S, UIKit.Hex("4B637D"), TextAlignmentOptions.Left);
+            refs.CoachTxt.fontWeight = FontWeight.Bold;
+            UIKit.TamanoFijo(refs.CoachTxt, 15f * S);
+            var coachAudio = BotonVoz(pregunta, 44f, 14f, UIKit.Blue, () => { var t = TextoCoach(b.Quiz[quizQ]); ReproducirVoz(refs, t); });
+            refs.CoachAudio = R(coachAudio);
+
+            var tarjeta = UIKit.Box(pregunta, Color.white, Mathf.RoundToInt(24f * S), "QCard");
+            refs.Tarjeta = tarjeta.rectTransform;
+            refs.TarjetaSombra = UIKit.AddShadow(tarjeta, Mathf.RoundToInt(24f * S), .10f, -6, 6).rectTransform;
+            refs.Tipo = UIKit.Text(tarjeta.transform, "", 12f * S, UIKit.Blue, TextAlignmentOptions.Left);
+            refs.Tipo.characterSpacing = 6f;
+            refs.Question = UIKit.Text(tarjeta.transform, "", 21f * S, UIKit.Navy, TextAlignmentOptions.Left);
+            UIKit.TamanoFijo(refs.Question, 21f * S);
+            UIKit.Interlinea(refs.Question, 1.42f);
+            var qAudio = BotonVoz(tarjeta.transform, 48f, 15f, UIKit.Blue, () => ReproducirVoz(refs, b.Quiz[quizQ].Q));
+            qAudio.GetComponent<Image>().color = UIKit.Hex("EAF5FF");
+            var qart = R(qAudio);
+            qart.anchorMin = qart.anchorMax = new Vector2(1, 1); qart.pivot = new Vector2(1, 1);
+            qart.anchoredPosition = new Vector2(-17f * S, -17f * S);
+
+            // Reproductor de voz (oculto hasta que se escucha algo)
+            var repro = UIKit.Box(pregunta, UIKit.Hex("DFEFFF"), Mathf.RoundToInt(17f * S), "QuizAudioControls");
+            refs.Reproductor = repro.rectTransform;
+            var rIco = UIKit.Img(repro.transform, figSpeaker, "Speaker"); rIco.color = UIKit.Hex("245D93"); rIco.preserveAspect = true;
+            UIKit.TopLeft(rIco.rectTransform, 13f * S, 16f * S, 26f * S, 26f * S);
+            refs.AudioStatus = UIKit.Text(repro.transform, "", 14f * S, UIKit.Hex("24496D"), TextAlignmentOptions.Left);
+            UIKit.TopLeft(refs.AudioStatus.rectTransform, 47f * S, 18f * S, 130f * S, 22f * S);
+            refs.AudioPulse = UIKit.Box(repro.transform, UIKit.Blue, 4, "Pulse");
+            UIKit.TopLeft(refs.AudioPulse.rectTransform, 180f * S, 27f * S, cardW - 293f * S, 4f * S);
+            var pulso = Anim.Pulso(refs.AudioPulse); pulso.alterna = true;
+            var rPausa = UIKit.Button(repro.transform, "", Color.white, UIKit.Navy, Mathf.RoundToInt(13f * S), () => PausarVoz(refs), 10);
+            UIKit.TopLeft(R(rPausa), cardW - 105f * S, 7f * S, 44f * S, 44f * S);
+            refs.AudioToggleIcon = UIKit.Img(rPausa.transform, figPause, "Toggle"); refs.AudioToggleIcon.color = UIKit.Hex("245D93"); refs.AudioToggleIcon.preserveAspect = true;
+            UIKit.Stretch(refs.AudioToggleIcon.rectTransform, 11.5f * S);
+            var rStop = UIKit.Button(repro.transform, "", Color.white, UIKit.Navy, Mathf.RoundToInt(13f * S), () => DetenerVoz(refs), 10);
+            UIKit.TopLeft(R(rStop), cardW - 53f * S, 7f * S, 44f * S, 44f * S);
+            var rStopIco = UIKit.Img(rStop.transform, figStop, "Stop"); rStopIco.color = UIKit.Hex("245D93"); rStopIco.preserveAspect = true;
+            UIKit.Stretch(rStopIco.rectTransform, 12.5f * S);
+
+            // Cuatro opciones; la pantalla decide si van en lista o en parejas
+            refs.Opciones = new OpcionQuiz[4];
+            for (int i = 0; i < 4; i++)
             {
-                if (g.Type == GameType.Choice) mcCount = Mathf.Max(mcCount, g.Options.Length);
-                else if (g.Type == GameType.Matching) pairCount = Mathf.Max(pairCount, g.Left.Length);
-                else if (g.Type == GameType.MultiSelect) msCount = Mathf.Max(msCount, g.Options.Length);
-            }
-
-            var progress = UIKit.Text(p, "", 17f * 2.77f, UIKit.Navy, TextAlignmentOptions.Left);
-            var progressType = UIKit.Text(p, "", 14f * 2.77f, UIKit.Muted, TextAlignmentOptions.Right, FontStyles.Bold);
-            var progressFill = ProgressBar(p, 0f, .06f, .755f, .94f, .77f, b.Accent, .4f);
-            var card = UIKit.Box(p, UIKit.Card, 36, "QCard");
-            var coachBubble = UIKit.Box(p, Color.white, Mathf.RoundToInt(4f * 2.77f), "CoachBubble");
-            UIKit.Frac(coachBubble.rectTransform, 0.20f, 0.62f, 0.87f, 0.71f);
-            var coach = UIKit.Text(coachBubble.transform, "¡Tú puedes, lee con calma!", 15f * 2.77f, UIKit.Muted, TextAlignmentOptions.Left, FontStyles.Normal);
-            UIKit.Stretch(coach.rectTransform, 18f);
-            var coachRobot = UIKit.Img(p, book == 0 ? robotCoral : (book == 1 ? robotVerde : robotAzul), "Coach"); coachRobot.preserveAspect = true;
-            UIKit.Frac(coachRobot, 0.06f, 0.61f, 0.19f, 0.75f);
-            var questionType = UIKit.Text(card.transform, "", 13f * 2.77f, b.Accent, TextAlignmentOptions.Left, FontStyles.Bold);
-            UIKit.Frac(questionType, 0.08f, 0.70f, 0.92f, 0.90f);
-            var question = UIKit.Text(card.transform, "", 21f * 2.77f, UIKit.Navy, TextAlignmentOptions.Left);
-            UIKit.Frac(question, 0.08f, 0.12f, 0.92f, 0.68f);
-            var questionAudio = UIKit.Button(card.transform, "", UIKit.Hex("EAF5FF"), UIKit.Blue, Mathf.RoundToInt(15f * 2.77f), null, 15, false);
-            UIKit.Frac(R(questionAudio), .80f, .72f, .95f, .95f);
-            var questionAudioIcon = UIKit.Img(questionAudio.transform, figSpeaker != null ? figSpeaker : icAudio, "Speaker");
-            questionAudioIcon.color = UIKit.Blue; questionAudioIcon.preserveAspect = true; UIKit.Stretch(questionAudioIcon.rectTransform, 10f);
-
-            float progY0, progY1, cardY0, cardY1, ansY0, ansY1, ax0, ax1;
-            if (!land) { progY0 = 0.78f; progY1 = 0.83f; cardY0 = 0.46f; cardY1 = 0.64f; ansY0 = 0.05f; ansY1 = 0.42f; ax0 = 0.08f; ax1 = 0.92f; }
-            else { progY0 = 0.76f; progY1 = 0.82f; cardY0 = 0.48f; cardY1 = 0.70f; ansY0 = 0.07f; ansY1 = 0.43f; ax0 = 0.14f; ax1 = 0.86f; }
-            UIKit.Frac(progress, ax0, progY0, ax1 - 0.30f, progY1);
-            UIKit.Frac(progressType, ax0 + 0.32f, progY0, ax1, progY1);
-            UIKit.Frac(card.rectTransform, 0.06f, cardY0, 0.94f, cardY1);
-            Anim.PreguntaEntra(card);
-
-            // ---- Grupo Choice (opción múltiple / verdadero-falso / completar frase) ----
-            var mcGroup = UIKit.Node("McGroup", p);
-            UIKit.Stretch(mcGroup);
-            var mcBtn = new Button[mcCount]; var mcImg = new Image[mcCount]; var mcLbl = new TMP_Text[mcCount];
-            if (mcCount > 0)
-            {
-                float gap = land ? 0.02f : 0.025f;
-                float oh = (ansY1 - ansY0 - gap * (mcCount - 1)) / mcCount;
-                for (int i = 0; i < mcCount; i++)
+                int fila = i;
+                var o = new OpcionQuiz();
+                o.Btn = UIKit.Button(pregunta, "", Color.white, UIKit.Navy, Mathf.RoundToInt(18f * S), () => ResponderQuiz(refs, fila), 10);
+                o.Borde = o.Btn.GetComponent<Image>();
+                o.Sombra = UIKit.AddShadow(o.Borde, Mathf.RoundToInt(18f * S), .09f, -3, 3).rectTransform;
+                o.Interior = UIKit.Box(o.Btn.transform, Color.white, Mathf.RoundToInt(16f * S), "Interior");
+                UIKit.Stretch(o.Interior.rectTransform, 2f * S);
+                o.Texto = UIKit.Text(o.Btn.transform, "", 17f * S, UIKit.Navy, TextAlignmentOptions.Left);
+                o.Texto.fontWeight = FontWeight.SemiBold;
+                UIKit.TamanoFijo(o.Texto, 17f * S);
+                UIKit.Interlinea(o.Texto, 1.4f);
+                o.ParA = UIKit.Text(o.Btn.transform, "", 17f * S, UIKit.Navy);
+                var linea = UIKit.Box(o.Btn.transform, UIKit.Hex("D5E0E9"), 4, "Linea");
+                o.ParLinea = linea.rectTransform;
+                o.ParB = UIKit.Text(o.Btn.transform, "", 16f * S, UIKit.Hex("607790"), TextAlignmentOptions.Center, FontStyles.Normal);
+                o.Pill = UIKit.Box(o.Btn.transform, UIKit.Hex("CCEFDC"), Mathf.RoundToInt(8f * S), "Estado");
+                o.PillIco = UIKit.Img(o.Pill.transform, figCheck, "Ico"); o.PillIco.preserveAspect = true;
+                UIKit.TopLeft(o.PillIco.rectTransform, 7f * S, 6f * S, 16f * S, 16f * S);
+                o.PillTxt = UIKit.Text(o.Pill.transform, "", 15f * S, Color.white, TextAlignmentOptions.Left);
+                UIKit.TopLeft(o.PillTxt.rectTransform, 25f * S, 3f * S, 86f * S, 22f * S);
+                var aud = BotonVoz(pregunta, 48f, 15f, UIKit.Hex("59738D"), () =>
                 {
-                    var btn = UIKit.Button(mcGroup, "", UIKit.Card, UIKit.Navy, 30, null);
-                    var lbl = UIKit.Text(btn.transform, "", 16f * 2.77f, UIKit.Navy, TextAlignmentOptions.Left);
-                    UIKit.Frac(lbl, 0.05f, 0.04f, 0.95f, 0.96f);
-                    float top = ansY1 - i * (oh + gap);
-                    UIKit.Frac(R(btn), ax0, top - oh, ax1, top);
-                    mcBtn[i] = btn; mcImg[i] = btn.GetComponent<Image>(); mcLbl[i] = lbl;
-                }
+                    var q = b.Quiz[quizQ];
+                    ReproducirVoz(refs, q.Options[refs.Orden[fila]]);
+                });
+                o.Audio = aud;
+                o.AudioSombra = UIKit.AddShadow(aud.GetComponent<Image>(), Mathf.RoundToInt(15f * S), .09f, -3, 3).rectTransform;
+                refs.Opciones[i] = o;
             }
 
-            // ---- Grupo Matching (relacionar, tap-to-pair) ----
-            var matchGroup = UIKit.Node("MatchGroup", p);
-            UIKit.Stretch(matchGroup);
-            var leftBtn = new Button[pairCount]; var leftImg = new Image[pairCount]; var leftLbl = new TMP_Text[pairCount];
-            var rightBtn = new Button[pairCount]; var rightImg = new Image[pairCount]; var rightLbl = new TMP_Text[pairCount];
-            if (pairCount > 0)
-            {
-                float gap = 0.018f;
-                float rh = (ansY1 - ansY0 - gap * (pairCount - 1)) / pairCount;
-                float lx0 = land ? 0.10f : 0.05f, lx1 = 0.47f, rx0 = 0.53f, rx1 = land ? 0.90f : 0.95f;
-                for (int i = 0; i < pairCount; i++)
-                {
-                    float top = ansY1 - i * (rh + gap);
-                    var lb = UIKit.Button(matchGroup, "", UIKit.Card, UIKit.Navy, 24, null, 26);
-                    var ll = UIKit.Text(lb.transform, "", 16f * 2.77f, UIKit.Navy, TextAlignmentOptions.Center, FontStyles.Bold);
-                    UIKit.Frac(ll, 0.03f, 0.02f, 0.97f, 0.98f);
-                    UIKit.Frac(R(lb), lx0, top - rh, lx1, top);
-                    leftBtn[i] = lb; leftImg[i] = lb.GetComponent<Image>(); leftLbl[i] = ll;
+            // Retroalimentación
+            var fb = UIKit.Box(pregunta, UIKit.Hex("9BD7B8"), Mathf.RoundToInt(22f * S), "Feedback");
+            refs.FeedbackBorde = fb; refs.Feedback = fb.rectTransform;
+            var fbInt = UIKit.Box(fb.transform, UIKit.Hex("E8F8F0"), Mathf.RoundToInt(20f * S), "Interior");
+            UIKit.Stretch(fbInt.rectTransform, 2f * S);
+            refs.FeedbackInterior = fbInt;
+            var fbCaja = UIKit.Box(fb.transform, Color.white, Mathf.RoundToInt(13f * S), "FeedbackIconBg");
+            UIKit.TopLeft(fbCaja.rectTransform, 18f * S, 30f * S, 42f * S, 42f * S);
+            refs.FeedbackIcon = UIKit.Img(fbCaja.transform, figStar, "FeedbackIcon"); refs.FeedbackIcon.preserveAspect = true;
+            UIKit.Stretch(refs.FeedbackIcon.rectTransform, 9f * S);
+            Anim.Estrella(refs.FeedbackIcon);
+            refs.FeedbackTitle = UIKit.Text(fb.transform, "", 19f * S, Color.white, TextAlignmentOptions.Left);
+            UIKit.TopLeft(refs.FeedbackTitle.rectTransform, 70f * S, 18f * S, cardW - 145f * S, 27f * S);
+            refs.FeedbackText = UIKit.Text(fb.transform, "", 16f * S, Color.white, TextAlignmentOptions.Left, FontStyles.Normal);
+            UIKit.TamanoFijo(refs.FeedbackText, 16f * S);
+            UIKit.Interlinea(refs.FeedbackText, 1.4f);
+            var fbRobot = UIKit.Img(fb.transform, RobotDeLibro(book), "Robot"); fbRobot.preserveAspect = true;
+            UIKit.TopLeft(fbRobot.rectTransform, cardW - 73f * S, 18f * S, 55f * S, 66f * S);
+            var acciones = UIKit.Node("Acciones", fb.transform);
+            refs.FeedbackAcciones = acciones;
+            var fbAudio = BotonVoz(acciones, 48f, 14f, UIKit.Blue, () => ReproducirVoz(refs, TextoFeedback(refs)));
+            UIKit.TopLeft(R(fbAudio), 0, 1f * S, 48f * S, 48f * S);
+            var seguir = UIKit.Button(acciones, "", UIKit.Blue, Color.white, Mathf.RoundToInt(15f * S), () => ContinueQuiz(refs), 10);
+            UIKit.TopLeft(R(seguir), 58f * S, 0, cardW - 94f * S, 50f * S);
+            refs.ContinuarTxt = UIKit.Text(seguir.transform, "", 15f * S, Color.white, TextAlignmentOptions.Center);
+            UIKit.Frac(refs.ContinuarTxt, .05f, .1f, .85f, .9f);
+            var segIco = UIKit.Img(seguir.transform, figChevron, "Chevron"); segIco.color = Color.white; segIco.preserveAspect = true;
+            UIKit.Frac(segIco, .82f, .29f, .92f, .71f);
 
-                    var rb = UIKit.Button(matchGroup, "", UIKit.Card, UIKit.Navy, 24, null, 26);
-                    var rl = UIKit.Text(rb.transform, "", 16f * 2.77f, UIKit.Navy, TextAlignmentOptions.Center, FontStyles.Bold);
-                    UIKit.Frac(rl, 0.03f, 0.02f, 0.97f, 0.98f);
-                    UIKit.Frac(R(rb), rx0, top - rh, rx1, top);
-                    rightBtn[i] = rb; rightImg[i] = rb.GetComponent<Image>(); rightLbl[i] = rl;
-                }
-            }
+            // Resultado final
+            var resultado = UIKit.Node("Resultado", content);
+            refs.Resultado = resultado;
+            float altoR = 650f * S;
+            UIKit.Top(resultado, 0, 22f * S, cardW, altoR);
+            var rCard = UIKit.Box(resultado, Color.white, Mathf.RoundToInt(24f * S), "ResultCard");
+            UIKit.Stretch(rCard.rectTransform);
+            float rw = cardW - 50f * S, ry = 28f * S;
+            var rRobot = UIKit.Img(rCard.transform, RobotDeLibro(book), "Robot"); rRobot.preserveAspect = true;
+            UIKit.TopLeft(rRobot.rectTransform, (cardW - 118f * S) / 2f, ry, 118f * S, 143f * S);
+            Anim.Celebrar(rRobot);
+            ry += 143f * S - 25f * S;
+            var rEstrella = UIKit.Img(rCard.transform, UIKit.Circle(), "Star"); rEstrella.color = UIKit.Hex("FFF6D6");
+            UIKit.TopLeft(rEstrella.rectTransform, (cardW - 86f * S) / 2f, ry, 86f * S, 86f * S);
+            var rEstrellaIco = UIKit.Img(rEstrella.transform, figStar, "Icono"); rEstrellaIco.color = UIKit.Prog; rEstrellaIco.preserveAspect = true;
+            UIKit.Stretch(rEstrellaIco.rectTransform, 14f * S);
+            Anim.Estrella(rEstrellaIco);
+            ry += 86f * S + 16f * S;
+            var rKick = UIKit.Text(rCard.transform, "MISIÓN SUPERADA", 12f * S, UIKit.Hex("937116"));
+            rKick.characterSpacing = 8f;
+            UIKit.TopLeft(rKick.rectTransform, 25f * S, ry, rw, 18f * S); ry += 25f * S;
+            var rTit = UIKit.Text(rCard.transform, "¡Misión completada!", 29f * S, UIKit.Navy);
+            UIKit.TopLeft(rTit.rectTransform, 25f * S, ry, rw, 40f * S); ry += 45f * S;
+            refs.ResultTexto = UIKit.Text(rCard.transform, "", 16f * S, UIKit.Hex("607690"), TextAlignmentOptions.Center, FontStyles.Normal);
+            UIKit.TopLeft(refs.ResultTexto.rectTransform, 25f * S, ry, rw, 24f * S); ry += 38f * S;
+            refs.ResultEstrellas = UIKit.Text(rCard.transform, "", 21f * S, UIKit.Hex("E3A627"));
+            UIKit.TopLeft(refs.ResultEstrellas.rectTransform, 25f * S, ry, rw, 30f * S); ry += 45f * S;
+            var rTrack = UIKit.Box(rCard.transform, UIKit.Hex("E7EDF2"), Mathf.RoundToInt(6f * S), "ResultTrack");
+            UIKit.TopLeft(rTrack.rectTransform, 25f * S, ry, rw, 12f * S); ry += 28f * S;
+            refs.ResultFill = UIKit.Box(rTrack.transform, b.Accent, Mathf.RoundToInt(6f * S), "ResultFill");
+            UIKit.Frac(refs.ResultFill.rectTransform, 0f, 0f, 0f, 1f);
+            var escuchar = UIKit.Button(rCard.transform, "", UIKit.Hex("EDF5FB"), UIKit.Navy, Mathf.RoundToInt(14f * S),
+                () => ReproducirVozSimple("¡Misión completada! Respondiste correctamente " + quizScore + " de " + b.Quiz.Length + "."), 10);
+            UIKit.TopLeft(R(escuchar), (cardW - 192f * S) / 2f, ry, 192f * S, 46f * S);
+            var escTxt = UIKit.Text(escuchar.transform, "Escuchar resultado", 14f * S, UIKit.Hex("3C5E7D"), TextAlignmentOptions.Left);
+            UIKit.TopLeft(escTxt.rectTransform, 44f * S, 12f * S, 140f * S, 22f * S);
+            var escIco = UIKit.Img(escuchar.transform, figSpeaker, "Icono"); escIco.color = UIKit.Hex("3C5E7D"); escIco.preserveAspect = true;
+            UIKit.TopLeft(escIco.rectTransform, 15f * S, 12.5f * S, 21f * S, 21f * S);
+            ry += 59f * S;
+            var repetir = UIKit.Button(rCard.transform, "VOLVER A JUGAR", b.Accent, Color.white, Mathf.RoundToInt(17f * S), () => ShowOnly(p, false), Mathf.RoundToInt(17f * S));
+            UIKit.TopLeft(R(repetir), 25f * S, ry, rw, 60f * S); ry += 70f * S;
+            var regresarBorde = UIKit.Button(rCard.transform, "", UIKit.Hex("DCE5EC"), UIKit.Navy, Mathf.RoundToInt(17f * S), () => ShowOnly(pJuegos), 10);
+            UIKit.TopLeft(R(regresarBorde), 25f * S, ry, rw, 55f * S);
+            var regInt = UIKit.Box(regresarBorde.transform, Color.white, Mathf.RoundToInt(15f * S), "Interior");
+            UIKit.Stretch(regInt.rectTransform, 2f * S);
+            var regTxt = UIKit.Text(regInt.transform, "REGRESAR A MISIONES", 16f * S, UIKit.Navy);
+            UIKit.Stretch(regTxt.rectTransform);
+            ry += 55f * S + 30f * S;
+            UIKit.Top(resultado, 0, 22f * S, cardW, ry);
+            UIKit.AddShadow(rCard, Mathf.RoundToInt(24f * S), .10f, -6, 6);
+            resultado.gameObject.SetActive(false);
+            return p;
+        }
 
-            // ---- Grupo MultiSelect (grilla de opciones + botón Confirmar) ----
-            var msGroup = UIKit.Node("MsGroup", p);
-            UIKit.Stretch(msGroup);
-            var msBtn = new Button[msCount]; var msImg = new Image[msCount]; var msLbl = new TMP_Text[msCount];
-            Button msConfirm = null; Image msConfirmImg = null;
-            if (msCount > 0)
-            {
-                int cols = 2, rows = Mathf.CeilToInt(msCount / 2f);
-                float confirmH = 0.09f, gridY0 = ansY0 + confirmH + 0.03f, gridY1 = ansY1;
-                for (int i = 0; i < msCount; i++)
-                {
-                    var rc = UIKit.Cell(i, cols, rows, ax0, gridY0, ax1, gridY1, 0.03f, 0.02f);
-                    var btn = UIKit.Button(msGroup, "", UIKit.Card, UIKit.Navy, 24, null, 28);
-                    var lbl = UIKit.Text(btn.transform, "", 16f * 2.77f, UIKit.Navy, TextAlignmentOptions.Center, FontStyles.Bold);
-                    UIKit.Stretch(lbl.rectTransform, 10);
-                    UIKit.Frac(R(btn), rc.xMin, rc.yMin, rc.xMax, rc.yMax);
-                    msBtn[i] = btn; msImg[i] = btn.GetComponent<Image>(); msLbl[i] = lbl;
-                }
-                msConfirm = UIKit.Button(msGroup, "Confirmar", b.Accent, Color.white, 32, null, 34);
-                UIKit.Frac(R(msConfirm), ax0, ansY0, ax1, ansY0 + confirmH);
-                msConfirmImg = msConfirm.GetComponent<Image>();
-            }
+        Button BotonVoz(Transform parent, float tam, float radio, Color tinta, UnityEngine.Events.UnityAction click)
+        {
+            const float S = 2.77f;
+            var boton = UIKit.Button(parent, "", Color.white, tinta, Mathf.RoundToInt(radio * S), click, 10);
+            var rt = R(boton); rt.sizeDelta = new Vector2(tam * S, tam * S);
+            var ico = UIKit.Img(boton.transform, figSpeaker, "Icono"); ico.color = tinta; ico.preserveAspect = true;
+            var irt = ico.rectTransform;
+            irt.anchorMin = irt.anchorMax = new Vector2(.5f, .5f);
+            irt.sizeDelta = new Vector2(21f * S, 21f * S); irt.anchoredPosition = Vector2.zero;
+            return boton;
+        }
 
-            // AddShadow lee el rect ACTUAL del elemento para calcular la sombra: se llama después
-            // de fijar la posición final (Frac) de cada grupo, ya construido a su tamaño real.
-            UIKit.AddShadow(card, 36, 0.10f, -6, 6);
-            for (int i = 0; i < mcCount; i++) UIKit.AddShadow(mcImg[i], 26, 0.10f, -5, 5);
-            for (int i = 0; i < pairCount; i++) { UIKit.AddShadow(leftImg[i], 18, 0.10f, -4, 4); UIKit.AddShadow(rightImg[i], 18, 0.10f, -4, 4); }
-            for (int i = 0; i < msCount; i++) UIKit.AddShadow(msImg[i], 20, 0.10f, -4, 4);
-            if (msConfirmImg != null) UIKit.AddShadow(msConfirmImg, 24, 0.12f, -5, 5);
+        static string TextoCoach(GameItem q) =>
+            q.EsRelacion ? "¡Busca la pareja que sí corresponde!" :
+            q.EsFrase ? "¡Elige la palabra que completa la idea!" : "¡Tú puedes, lee con calma!";
 
-            var audioPanel = UIKit.Box(p, UIKit.Hex("DFEFFF"), Mathf.RoundToInt(17f * 2.77f), "QuizAudioControls");
-            UIKit.Frac(audioPanel.rectTransform, .06f, .70f, .94f, .76f);
-            var audioSpeaker = UIKit.Img(audioPanel.transform, figSpeaker != null ? figSpeaker : icAudio, "Speaker");
-            audioSpeaker.color = UIKit.Hex("245D93"); audioSpeaker.preserveAspect = true; UIKit.Frac(audioSpeaker, .04f, .24f, .12f, .76f);
-            var audioStatus = UIKit.Text(audioPanel.transform, "Escuchando", 14f * 2.77f, UIKit.Hex("24496D"), TextAlignmentOptions.Left);
-            UIKit.Frac(audioStatus, .15f, .18f, .42f, .82f);
-            var audioPulse = UIKit.Box(audioPanel.transform, UIKit.Blue, Mathf.RoundToInt(4f * 2.77f), "Pulse");
-            UIKit.Frac(audioPulse.rectTransform, .44f, .46f, .60f, .54f);
-            var pulseAnim = Anim.Pulso(audioPulse); pulseAnim.alterna = true;
-            var audioToggle = UIKit.Button(audioPanel.transform, "", Color.white, UIKit.Hex("245D93"), Mathf.RoundToInt(13f * 2.77f), null, 13, false);
-            UIKit.Frac(R(audioToggle), .64f, .12f, .82f, .88f);
-            var audioToggleIcon = UIKit.Img(audioToggle.transform, figPause != null ? figPause : figPlay, "Toggle");
-            audioToggleIcon.color = UIKit.Hex("245D93"); audioToggleIcon.preserveAspect = true; UIKit.Stretch(audioToggleIcon.rectTransform, 10f);
-            var audioStop = UIKit.Button(audioPanel.transform, "", Color.white, UIKit.Hex("245D93"), Mathf.RoundToInt(13f * 2.77f), null, 13, false);
-            UIKit.Frac(R(audioStop), .83f, .12f, .99f, .88f);
-            var audioStopIcon = UIKit.Img(audioStop.transform, figStop != null ? figStop : figInfo, "Stop");
-            audioStopIcon.color = UIKit.Hex("245D93"); audioStopIcon.preserveAspect = true; UIKit.Stretch(audioStopIcon.rectTransform, 10f);
-            audioPanel.gameObject.SetActive(false);
+        static string TextoTipo(GameItem q) =>
+            q.EsRelacion ? "Relaciona los elementos" : q.EsFrase ? "Completa la frase" : "Selecciona la respuesta";
 
-            var feedback = UIKit.Box(p, UIKit.Hex("E8F8F0"), Mathf.RoundToInt(22f * 2.77f), "Feedback");
-            UIKit.Frac(feedback.rectTransform, .04f, .03f, .96f, .30f);
-            var feedbackOutline = feedback.gameObject.AddComponent<Outline>();
-            feedbackOutline.effectDistance = new Vector2(2f * 2.77f, -2f * 2.77f);
-            feedbackOutline.effectColor = UIKit.Hex("9BD7B8");
-            Anim.Feedback(feedback);
-            var feedbackIconBg = UIKit.Box(feedback.transform, Color.white, Mathf.RoundToInt(13f * 2.77f), "FeedbackIconBg");
-            UIKit.Frac(feedbackIconBg.rectTransform, .05f, .60f, .17f, .90f);
-            var feedbackIcon = UIKit.Img(feedbackIconBg.transform, figStar, "FeedbackIcon");
-            feedbackIcon.color = UIKit.Prog; feedbackIcon.preserveAspect = true; UIKit.Stretch(feedbackIcon.rectTransform, 8f);
-            var feedbackTitle = UIKit.Text(feedback.transform, "", 19f * 2.77f, UIKit.Hex("225D43"), TextAlignmentOptions.Left);
-            UIKit.Frac(feedbackTitle, .21f, .72f, .74f, .92f);
-            var feedbackText = UIKit.Text(feedback.transform, "", 16f * 2.77f, UIKit.Hex("225D43"), TextAlignmentOptions.Left, FontStyles.Normal);
-            UIKit.Frac(feedbackText, .21f, .48f, .74f, .72f);
-            var feedbackRobot = UIKit.Img(feedback.transform, book == 0 ? robotCoral : (book == 1 ? robotVerde : robotAzul), "Robot");
-            feedbackRobot.preserveAspect = true; UIKit.Frac(feedbackRobot, .77f, .50f, .96f, .96f);
-            var feedbackAudio = UIKit.Button(feedback.transform, "", Color.white, UIKit.Blue, Mathf.RoundToInt(14f * 2.77f), null, 14, false);
-            UIKit.Frac(R(feedbackAudio), .05f, .09f, .17f, .40f);
-            var feedbackAudioIcon = UIKit.Img(feedbackAudio.transform, figSpeaker != null ? figSpeaker : icAudio, "Speaker");
-            feedbackAudioIcon.color = UIKit.Blue; feedbackAudioIcon.preserveAspect = true; UIKit.Stretch(feedbackAudioIcon.rectTransform, 9f);
-            var continueButton = UIKit.Button(feedback.transform, "CONTINUAR ›", UIKit.Blue, Color.white, Mathf.RoundToInt(15f * 2.77f), null, Mathf.RoundToInt(15f * 2.77f), false);
-            UIKit.Frac(R(continueButton), .21f, .09f, .95f, .40f);
-            feedback.gameObject.SetActive(false);
+        string TextoFeedback(QuizRefs r)
+        {
+            var q = books[quizBook].Quiz[quizQ];
+            if (r.Elegida >= 0 && r.Orden[r.Elegida] == q.Correct) return "¡Excelente trabajo! Encontraste la respuesta correcta.";
+            return "¡Buen intento! Vamos a aprender juntos. La respuesta correcta es " + q.Options[q.Correct] + ".";
+        }
 
-            // Overlay de resultado final (oculto hasta terminar los juegos del libro)
-            var resultPanel = UIKit.Node("Result", p);
-            UIKit.Stretch(resultPanel);
-            var resBg = UIKit.Box(resultPanel, new Color(0.95f, 0.98f, 1f, 0.97f), 0, "Bg");
-            UIKit.Stretch(resBg.rectTransform);
-            var resultCard = UIKit.Box(resultPanel, Color.white, 24 * 2, "ResultCard");
-            UIKit.Frac(resultCard, 0.06f, 0.18f, 0.94f, 0.82f); UIKit.AddShadow(resultCard, 48, .12f, -8, 8);
-            var resultRobot = UIKit.Img(resultCard.transform, book == 0 ? robotCoral : (book == 1 ? robotVerde : robotAzul), "Robot"); resultRobot.preserveAspect = true; UIKit.Frac(resultRobot, 0.32f, 0.66f, 0.68f, 0.94f);
-            Anim.Celebrar(resultRobot);
-            var resultStar = UIKit.Img(resultCard.transform, figStar, "Star"); resultStar.color = UIKit.Prog; resultStar.preserveAspect = true; UIKit.Frac(resultStar, 0.43f, 0.56f, 0.57f, 0.66f);
-            Anim.Estrella(resultStar);
-            var resultTrack = UIKit.Box(resultCard.transform, UIKit.Hex("E2ECF5"), 12, "ResultTrack");
-            UIKit.Frac(resultTrack.rectTransform, 0.12f, 0.30f, 0.88f, 0.34f);
-            var resultFill = UIKit.Box(resultTrack.transform, b.Accent, 12, "ResultFill");
-            UIKit.Frac(resultFill.rectTransform, 0f, 0f, 0f, 1f);
-            Anim.Llenar(resultFill.GetComponent<Image>(), .7f);
-            var resultText = UIKit.Text(resultCard.transform, "", 25f * 2.77f, UIKit.Navy);
-            var retryBtn = UIKit.Button(resultCard.transform, "Volver a jugar", b.Accent, Color.white, 18 * 2, () => ShowOnly(p, false), 17 * 2);
-            var backBtn = UIKit.Button(resultCard.transform, "Regresar a misiones", Color.white, UIKit.Navy, 18 * 2, () => ShowOnly(pJuegos), 16 * 2);
-            if (!land)
-            {
-                UIKit.Frac(resultText, 0.12f, 0.36f, 0.88f, 0.63f);
-                UIKit.Frac(R(retryBtn), 0.15f, 0.21f, 0.85f, 0.31f);
-                UIKit.Frac(R(backBtn), 0.15f, 0.10f, 0.85f, 0.20f);
-            }
+        // Frase con su espacio: vacío al inicio y con la palabra elegida después de responder.
+        string TextoPregunta(QuizRefs r, GameItem q)
+        {
+            if (!q.EsFrase) return q.Q;
+            const string nb = " ";
+            string hueco;
+            if (r.Elegida < 0) hueco = "<color=#8499AD>________</color>";
             else
             {
-                UIKit.Frac(resultText, 0.12f, 0.36f, 0.88f, 0.63f);
-                UIKit.Frac(R(retryBtn), 0.30f, 0.24f, 0.70f, 0.36f);
-                UIKit.Frac(R(backBtn), 0.30f, 0.10f, 0.70f, 0.22f);
+                bool bien = r.Orden[r.Elegida] == q.Correct;
+                string palabra = q.Options[r.Orden[r.Elegida]].Replace(" ", nb);
+                hueco = bien
+                    ? "<mark=#E3F7EDFF><u color=#2FAE75><color=#237D55>" + nb + palabra + nb + "</color></u></mark>"
+                    : "<mark=#FDECEEFF><u color=#E94F58><color=#B73540>" + nb + palabra + nb + "</color></u></mark>";
             }
-            resultPanel.gameObject.SetActive(false);
-
-            var refs = p.gameObject.AddComponent<QuizRefs>();
-            refs.Set(progress, progressType, progressFill, resultFill, question, resultText, mcGroup, mcBtn, mcImg, mcLbl,
-                matchGroup, leftBtn, leftImg, leftLbl, rightBtn, rightImg, rightLbl,
-                msGroup, msBtn, msImg, msLbl, msConfirm, resultPanel, feedback.rectTransform,
-                feedbackTitle, feedbackText, feedbackIcon, feedbackAudio, continueButton, audioPanel.rectTransform,
-                audioStatus, audioPulse, audioToggleIcon, audioToggle, audioStop, questionAudio);
-
-            for (int i = 0; i < mcCount; i++) { int idx = i; mcBtn[i].onClick.AddListener(() => AnswerChoice(refs, idx)); }
-            for (int i = 0; i < pairCount; i++)
-            {
-                int idx = i;
-                leftBtn[i].onClick.AddListener(() => TapLeft(refs, idx));
-                rightBtn[i].onClick.AddListener(() => TapRight(refs, idx));
-            }
-            for (int i = 0; i < msCount; i++) { int idx = i; msBtn[i].onClick.AddListener(() => ToggleMs(refs, idx)); }
-            if (msConfirm != null) msConfirm.onClick.AddListener(() => ConfirmMs(refs));
-            questionAudio.onClick.AddListener(() => PlayQuizAudio(refs));
-            feedbackAudio.onClick.AddListener(() => PlayQuizAudio(refs));
-            continueButton.onClick.AddListener(() => ContinueQuiz(refs));
-            audioToggle.onClick.AddListener(() => ToggleQuizAudio(refs));
-            audioStop.onClick.AddListener(() => StopQuizAudio(refs));
-            return p;
+            return q.Q.Replace("______", hueco);
         }
 
         void RefreshQuiz()
         {
             if (bookQuiz == null || quizBook < 0 || quizBook >= bookQuiz.Length || bookQuiz[quizBook] == null) return;
             quizQ = 0; quizScore = 0;
+            quizEstrellasInicio = AppState.Stars;
             var refs = bookQuiz[quizBook].GetComponent<QuizRefs>();
             if (refs == null) return;
-            refs.ResultPanel.gameObject.SetActive(false);
-            refs.FeedbackPanel.gameObject.SetActive(false);
-            refs.AudioPanel.gameObject.SetActive(false);
-            if (audioSrc != null) audioSrc.Stop();
+            refs.Resultado.gameObject.SetActive(false);
+            refs.Pregunta.gameObject.SetActive(true);
+            DetenerVoz(refs);
             ShowQuizQuestion(refs);
         }
 
-        void ShowQuizQuestion(QuizRefs refs)
+        void ShowQuizQuestion(QuizRefs r)
         {
-            var qz = books[quizBook].Quiz[quizQ];
-            refs.FeedbackPanel.gameObject.SetActive(false);
-            refs.AudioPanel.gameObject.SetActive(false);
-            refs.QuestionAudio.gameObject.SetActive(QuizNarration() != null);
-            refs.Question.text = qz.Q;
-            refs.Progress.text = "Pregunta " + (quizQ + 1) + " de " + books[quizBook].Quiz.Length;
-            if (refs.ProgressType != null)
-                refs.ProgressType.text = qz.Type == GameType.Choice ? "Opción múltiple" :
-                    (qz.Type == GameType.Matching ? "Relaciona" : "Elige todas las correctas");
-            if (refs.ProgressFill != null)
-                SetProgress(refs.ProgressFill, (quizQ + 1f) / books[quizBook].Quiz.Length);
-            refs.McGroup.gameObject.SetActive(qz.Type == GameType.Choice);
-            refs.MatchGroup.gameObject.SetActive(qz.Type == GameType.Matching);
-            refs.MsGroup.gameObject.SetActive(qz.Type == GameType.MultiSelect);
-
-            if (qz.Type == GameType.Choice)
+            var book = books[quizBook];
+            var q = book.Quiz[quizQ];
+            r.Elegida = -1;
+            // Se mezclan las opciones para que la correcta no quede siempre primero
+            r.Orden = new[] { 0, 1, 2, 3 };
+            for (int i = 3; i > 0; i--)
             {
-                quizAnswered = false;
-                for (int i = 0; i < refs.McButtons.Length; i++)
+                int j = Random.Range(0, i + 1);
+                int t = r.Orden[i]; r.Orden[i] = r.Orden[j]; r.Orden[j] = t;
+            }
+            r.Progress.text = "Pregunta " + (quizQ + 1) + " de " + book.Quiz.Length;
+            r.ProgressType.text = TextoTipo(q);
+            SetProgress(r.ProgressFill, (quizQ + 1f) / book.Quiz.Length);
+            r.CoachTxt.text = TextoCoach(q);
+            r.Tipo.text = TextoTipo(q).ToUpper();
+            for (int i = 0; i < 4; i++) r.Opciones[i].Btn.interactable = true;
+            AcomodarQuiz(r);
+            r.Content.anchoredPosition = Vector2.zero;
+        }
+
+        void ResponderQuiz(QuizRefs r, int fila)
+        {
+            if (r.Elegida >= 0) return;
+            r.Elegida = fila;
+            var q = books[quizBook].Quiz[quizQ];
+            bool bien = r.Orden[fila] == q.Correct;
+            if (bien)
+            {
+                quizScore++;
+                var msgs = AppState.MarkQuizCorrect(quizBook, quizQ);
+                // La primera línea (+5 estrellas) ya la cuenta la tarjeta; solo se avisa lo extra.
+                if (msgs.Count > 1) ShowReward(string.Join("\n", msgs.GetRange(1, msgs.Count - 1)));
+            }
+            for (int i = 0; i < 4; i++) r.Opciones[i].Btn.interactable = false;
+            AcomodarQuiz(r);
+            StartCoroutine(BajarAlFinal(r));
+        }
+
+        IEnumerator BajarAlFinal(QuizRefs r)
+        {
+            yield return null;
+            var sr = r.Content.parent.GetComponent<ScrollRect>();
+            if (sr != null) { sr.velocity = Vector2.zero; sr.verticalNormalizedPosition = 0f; }
+        }
+
+        // Todo va en flujo, como en el diseño: cada bloque se coloca debajo del anterior.
+        void AcomodarQuiz(QuizRefs r)
+        {
+            const float S = 2.77f;
+            var q = books[quizBook].Quiz[quizQ];
+            float w = r.Content.sizeDelta.x, cardW = w - 40f * S, izq = -cardW / 2f;
+            float y = 85f * S;
+
+            // Entrenador
+            float burbujaW = cardW - 117f * S, textoW = burbujaW - 26f * S;
+            float altoCoachTxt = UIKit.Alto(r.CoachTxt, r.CoachTxt.text, textoW);
+            float altoBurbuja = altoCoachTxt + 18f * S, altoFila = Mathf.Max(65f * S, altoBurbuja);
+            UIKit.Top(r.Coach, izq + 27f * S, y + (altoFila - 65f * S) / 2f, 54f * S, 65f * S);
+            UIKit.Top(r.CoachBurbuja, izq + 63f * S + burbujaW / 2f, y + (altoFila - altoBurbuja) / 2f, burbujaW, altoBurbuja);
+            UIKit.AjustarSombra(r.BurbujaSombra, r.CoachBurbuja, -3);
+            UIKit.TopLeft(r.CoachTxt.rectTransform, 13f * S, 9f * S, textoW, altoCoachTxt + 4f);
+            r.CoachAudio.anchorMin = r.CoachAudio.anchorMax = new Vector2(.5f, 1); r.CoachAudio.pivot = new Vector2(.5f, 1);
+            r.CoachAudio.anchoredPosition = new Vector2(-izq - 22f * S, -(y + (altoFila - 44f * S) / 2f));
+            y += altoFila + 14f * S;
+
+            // Pregunta
+            float preguntaW = cardW - 90f * S;
+            r.Question.text = TextoPregunta(r, q);
+            float altoQ = UIKit.Alto(r.Question, r.Question.text, preguntaW);
+            float altoT = Mathf.Max(195f * S, 32f * S + 18f * S + 10f * S + altoQ + 28f * S);
+            float yBloque = (altoT - (18f * S + 10f * S + altoQ)) / 2f;
+            UIKit.Top(r.Tarjeta, 0, y, cardW, altoT);
+            UIKit.AjustarSombra(r.TarjetaSombra, r.Tarjeta, -6);
+            UIKit.TopLeft(r.Tipo.rectTransform, 25f * S, yBloque, preguntaW, 18f * S);
+            UIKit.TopLeft(r.Question.rectTransform, 25f * S, yBloque + 28f * S, preguntaW, altoQ + 4f);
+            y += altoT + 20f * S;
+
+            // Reproductor
+            bool hayAudio = r.Sonando;
+            r.Reproductor.gameObject.SetActive(hayAudio);
+            if (hayAudio)
+            {
+                UIKit.Top(r.Reproductor, 0, y - 5f * S, cardW, 58f * S);
+                y += 68f * S;
+            }
+
+            // Opciones
+            bool parejas = q.EsRelacion;
+            float colW = (cardW - 13f * S) / 2f, optW = cardW - 55f * S;
+            for (int i = 0; i < 4; i++)
+            {
+                var o = r.Opciones[i];
+                int real = r.Orden[i];
+                string texto = q.Options[real];
+                bool respondida = r.Elegida >= 0;
+                bool bien = respondida && real == q.Correct;
+                bool mal = respondida && !bien && r.Elegida == i;
+                o.Borde.color = bien ? VerdeBorde : mal ? RojoBorde : Color.white;
+                o.Interior.color = bien ? VerdeFondo : mal ? RojoFondo : Color.white;
+                o.Pill.gameObject.SetActive(bien || mal);
+                o.Pill.color = bien ? UIKit.Hex("CCEFDC") : UIKit.Hex("FBD3D7");
+                o.PillTxt.color = o.PillIco.color = bien ? UIKit.Hex("206F4B") : UIKit.Hex("A72C36");
+                o.PillIco.sprite = bien ? figCheck : figX;
+                o.PillTxt.text = bien ? "Correcta" : "Tu elección";
+                float pillW = (bien ? 92f : 113f) * S;
+
+                o.Texto.gameObject.SetActive(!parejas);
+                o.ParA.gameObject.SetActive(parejas);
+                o.ParB.gameObject.SetActive(parejas);
+                o.ParLinea.gameObject.SetActive(parejas);
+                float h, x, boxW;
+                if (parejas)
                 {
-                    bool active = i < qz.Options.Length;
-                    refs.McButtons[i].gameObject.SetActive(active);
-                    if (!active) continue;
-                    refs.McLabels[i].text = qz.Options[i];
-                    refs.McImages[i].color = UIKit.Card;
-                    refs.McButtons[i].interactable = true;
+                    var par = texto.Split('—');
+                    o.ParA.text = par[0].Trim();
+                    o.ParB.text = par.Length > 1 ? par[1].Trim() : "";
+                    o.ParA.color = bien ? UIKit.Hex("237D55") : mal ? UIKit.Hex("B73540") : UIKit.Navy;
+                    o.ParB.color = bien ? UIKit.Hex("237D55") : mal ? UIKit.Hex("B73540") : UIKit.Hex("607790");
+                    h = 130f * S; boxW = colW;
+                    x = (i % 2 == 0 ? -1f : 1f) * (colW + 13f * S) / 2f;
+                    float yFila = y + (i / 2) * 192f * S;
+                    UIKit.Top(R(o.Btn), x, yFila, boxW, h);
+                    UIKit.TopLeft(o.ParA.rectTransform, 8f * S, 27f * S, colW - 16f * S, 26f * S);
+                    UIKit.TopLeft(o.ParLinea, (colW - 35f * S) / 2f, 60f * S, 35f * S, 3f * S);
+                    UIKit.TopLeft(o.ParB.rectTransform, 8f * S, 70f * S, colW - 16f * S, 26f * S);
+                    UIKit.TopLeft(o.Pill.rectTransform, (colW - pillW) / 2f, h - 16f * S, pillW, 28f * S);
+                    UIKit.Top(R(o.Audio), x, yFila + h + 7f * S, 46f * S, 42f * S);
                 }
-            }
-            else if (qz.Type == GameType.Matching)
-            {
-                int n = qz.Left.Length;
-                matchRightOrder = new int[n];
-                for (int i = 0; i < n; i++) matchRightOrder[i] = i;
-                for (int i = n - 1; i > 0; i--) // Fisher-Yates: orden visual de la columna derecha
+                else
                 {
-                    int j = UnityEngine.Random.Range(0, i + 1);
-                    int tmp = matchRightOrder[i]; matchRightOrder[i] = matchRightOrder[j]; matchRightOrder[j] = tmp;
+                    float interior = optW - 34f * S;
+                    o.Texto.text = texto;
+                    float anchoLinea = o.Texto.GetPreferredValues(texto).x + 4f;
+                    bool cabeJunto = !(bien || mal) || anchoLinea + 8f * S + pillW <= interior;
+                    float anchoTexto = (bien || mal) && !cabeJunto ? interior - pillW - 8f * S : interior;
+                    float altoTexto = UIKit.Alto(o.Texto, texto, anchoTexto);
+                    h = Mathf.Max(70f * S, altoTexto + 34f * S);
+                    boxW = optW;
+                    x = -(cardW - optW) / 2f;
+                    UIKit.Top(R(o.Btn), x, y, boxW, h);
+                    UIKit.TopLeft(o.Texto.rectTransform, 17f * S, (h - altoTexto) / 2f, anchoTexto, altoTexto + 4f);
+                    float xPill = cabeJunto ? 17f * S + anchoLinea + 8f * S : optW - 17f * S - pillW;
+                    UIKit.TopLeft(o.Pill.rectTransform, xPill, (h - 28f * S) / 2f, pillW, 28f * S);
+                    UIKit.Top(R(o.Audio), (cardW - 48f * S) / 2f, y, 48f * S, h);
+                    y += h + 13f * S;
                 }
-                matchDoneLeft = new bool[n]; matchDoneRight = new bool[n];
-                matchSelected = -1; matchCount = 0; matchLocked = false;
-                for (int i = 0; i < refs.LeftButtons.Length; i++)
-                {
-                    bool active = i < n;
-                    refs.LeftButtons[i].gameObject.SetActive(active);
-                    refs.RightButtons[i].gameObject.SetActive(active);
-                    if (!active) continue;
-                    refs.LeftLabels[i].text = qz.Left[i];
-                    refs.RightLabels[i].text = qz.Right[matchRightOrder[i]];
-                    refs.LeftImages[i].color = UIKit.Card;
-                    refs.RightImages[i].color = UIKit.Card;
-                    refs.LeftButtons[i].interactable = true;
-                    refs.RightButtons[i].interactable = true;
-                }
+                UIKit.AjustarSombra(o.Sombra, R(o.Btn), -3);
+                UIKit.AjustarSombra(o.AudioSombra, R(o.Audio), -3);
             }
-            else // MultiSelect
+            if (parejas) y += 2 * 192f * S;
+            y += 7f * S;
+
+            // Retroalimentación
+            bool hayFeedback = r.Elegida >= 0;
+            r.Feedback.gameObject.SetActive(hayFeedback);
+            if (hayFeedback)
             {
-                int n = qz.Options.Length;
-                msSelected = new bool[n]; msAnswered = false;
-                for (int i = 0; i < refs.MsButtons.Length; i++)
-                {
-                    bool active = i < n;
-                    refs.MsButtons[i].gameObject.SetActive(active);
-                    if (!active) continue;
-                    refs.MsLabels[i].text = qz.Options[i];
-                    refs.MsImages[i].color = UIKit.Card;
-                    refs.MsButtons[i].interactable = true;
-                }
-                if (refs.MsConfirm != null) refs.MsConfirm.interactable = true;
+                bool bien = r.Orden[r.Elegida] == q.Correct;
+                Color tinta = bien ? UIKit.Hex("225D43") : UIKit.Hex("704516");
+                r.FeedbackBorde.color = bien ? UIKit.Hex("9BD7B8") : UIKit.Hex("F5C48B");
+                r.FeedbackInterior.color = bien ? UIKit.Hex("E8F8F0") : UIKit.Hex("FFF4E6");
+                r.FeedbackTitle.text = bien ? "¡Lo conseguiste!" : "¡Buen intento!";
+                r.FeedbackTitle.color = tinta; r.FeedbackText.color = tinta;
+                r.FeedbackIcon.sprite = bien ? figStar : figInfo;
+                r.FeedbackIcon.color = bien ? UIKit.Prog : UIKit.Scan;
+                r.FeedbackText.text = TextoFeedback(r);
+                float textoF = cardW - 145f * S;
+                float altoP = UIKit.Alto(r.FeedbackText, r.FeedbackText.text, textoF);
+                UIKit.TopLeft(r.FeedbackText.rectTransform, 70f * S, 48f * S, textoF, altoP + 4f);
+                float cabecera = Mathf.Max(66f * S, 30f * S + altoP);
+                float altoF = 18f * S + cabecera + 15f * S + 50f * S + 18f * S;
+                UIKit.Top(r.Feedback, 0, y, cardW, altoF);
+                UIKit.TopLeft(r.FeedbackAcciones, 18f * S, 18f * S + cabecera + 15f * S, cardW - 36f * S, 50f * S);
+                r.ContinuarTxt.text = quizQ == books[quizBook].Quiz.Length - 1 ? "VER RESULTADO" : "CONTINUAR";
+                y += altoF + 25f * S;
             }
+            r.Pregunta.sizeDelta = new Vector2(w, y);
+            r.Content.sizeDelta = new Vector2(w, y + 10f * S);
         }
 
-        void AnswerChoice(QuizRefs refs, int optIdx)
+        void ContinueQuiz(QuizRefs r)
         {
-            if (quizAnswered) return;
-            quizAnswered = true;
-            var qz = books[quizBook].Quiz[quizQ];
-            bool correct = optIdx == qz.Correct;
-            refs.McImages[optIdx].color = correct ? GreenOk : RedBad;
-            if (!correct) refs.McImages[qz.Correct].color = GreenOk;
-            for (int i = 0; i < qz.Options.Length; i++) refs.McButtons[i].interactable = false;
-            RegisterAnswer(correct);
-            ShowFeedback(refs, correct);
-        }
-
-        void TapLeft(QuizRefs refs, int idx)
-        {
-            if (matchLocked || matchDoneLeft[idx]) return;
-            matchSelected = idx;
-            for (int i = 0; i < matchDoneLeft.Length; i++)
-                if (!matchDoneLeft[i]) refs.LeftImages[i].color = i == idx ? BlueSel : UIKit.Card;
-        }
-
-        void TapRight(QuizRefs refs, int row)
-        {
-            if (matchLocked || matchDoneRight[row] || matchSelected < 0) return;
-            var qz = books[quizBook].Quiz[quizQ];
-            int leftIdx = matchSelected;
-            bool correct = matchRightOrder[row] == leftIdx;
-            if (correct)
-            {
-                matchDoneLeft[leftIdx] = true; matchDoneRight[row] = true;
-                refs.LeftImages[leftIdx].color = GreenOk; refs.RightImages[row].color = GreenOk;
-                refs.LeftButtons[leftIdx].interactable = false; refs.RightButtons[row].interactable = false;
-                matchSelected = -1; matchCount++;
-                if (matchCount >= qz.Left.Length)
-                {
-                    RegisterAnswer(true);
-                    ShowFeedback(refs, true);
-                }
-            }
-            else
-            {
-                StartCoroutine(FlashWrongMatch(refs, leftIdx, row));
-            }
-        }
-
-        IEnumerator FlashWrongMatch(QuizRefs refs, int leftIdx, int row)
-        {
-            matchLocked = true;
-            refs.LeftImages[leftIdx].color = RedBad;
-            refs.RightImages[row].color = RedBad;
-            yield return new WaitForSeconds(0.45f);
-            if (!matchDoneLeft[leftIdx]) refs.LeftImages[leftIdx].color = UIKit.Card;
-            if (!matchDoneRight[row]) refs.RightImages[row].color = UIKit.Card;
-            matchSelected = -1;
-            matchLocked = false;
-        }
-
-        void ToggleMs(QuizRefs refs, int idx)
-        {
-            if (msAnswered) return;
-            msSelected[idx] = !msSelected[idx];
-            refs.MsImages[idx].color = msSelected[idx] ? BlueSel : UIKit.Card;
-        }
-
-        void ConfirmMs(QuizRefs refs)
-        {
-            if (msAnswered) return;
-            msAnswered = true;
-            var qz = books[quizBook].Quiz[quizQ];
-            bool allCorrect = true;
-            for (int i = 0; i < qz.CorrectMask.Length; i++)
-            {
-                bool shouldSel = qz.CorrectMask[i];
-                refs.MsImages[i].color = msSelected[i] == shouldSel ? GreenOk : RedBad;
-                refs.MsButtons[i].interactable = false;
-                if (msSelected[i] != shouldSel) allCorrect = false;
-            }
-            if (refs.MsConfirm != null) refs.MsConfirm.interactable = false;
-            RegisterAnswer(allCorrect);
-            ShowFeedback(refs, allCorrect);
-        }
-
-        void RegisterAnswer(bool correct)
-        {
-            if (!correct) return;
-            quizScore++;
-            var msgs = AppState.MarkQuizCorrect(quizBook, quizQ);
-            if (msgs.Count > 0) ShowReward(string.Join("\n", msgs));
-        }
-
-        void ShowFeedback(QuizRefs refs, bool correct)
-        {
-            refs.FeedbackPanel.gameObject.SetActive(true);
-            refs.FeedbackPanel.GetComponent<Image>().color = correct ? UIKit.Hex("E8F8F0") : UIKit.Hex("FFF4E6");
-            var outline = refs.FeedbackPanel.GetComponent<Outline>();
-            if (outline != null) outline.effectColor = correct ? UIKit.Hex("9BD7B8") : UIKit.Hex("F5C48B");
-            refs.FeedbackTitle.color = correct ? UIKit.Hex("225D43") : UIKit.Hex("704516");
-            refs.FeedbackText.color = correct ? UIKit.Hex("225D43") : UIKit.Hex("704516");
-            refs.FeedbackTitle.text = correct ? "¡Lo conseguiste!" : "¡Buen intento!";
-            refs.FeedbackText.text = correct ? "¡Muy bien! Sigue así y gana más estrellas." : "Mira las respuestas marcadas y sigue aprendiendo.";
-            refs.Continue.GetComponentInChildren<TMP_Text>().text =
-                quizQ == books[quizBook].Quiz.Length - 1 ? "VER RESULTADO ›" : "CONTINUAR ›";
-            refs.FeedbackIcon.sprite = correct ? figStar : (figInfo != null ? figInfo : icInfo);
-            refs.FeedbackIcon.color = correct ? UIKit.Prog : UIKit.Blue;
-            var robot = refs.FeedbackPanel.Find("Robot");
-            if (robot != null) robot.GetComponent<Image>().color = Color.white;
-            var anim = refs.FeedbackPanel.GetComponent<Anim>();
-            if (anim != null) anim.Reproducir();
-            if (correct)
-            {
-                var star = refs.FeedbackPanel.Find("FeedbackIconBg/FeedbackIcon");
-                if (star != null)
-                {
-                    var starAnim = star.GetComponent<Anim>();
-                    if (starAnim == null) starAnim = Anim.Estrella(star);
-                    starAnim.Reproducir();
-                }
-            }
-        }
-
-        void ContinueQuiz(QuizRefs refs)
-        {
+            DetenerVoz(r);
             quizQ++;
-            if (quizQ >= books[quizBook].Quiz.Length) ShowQuizResult(refs);
-            else ShowQuizQuestion(refs);
+            if (quizQ >= books[quizBook].Quiz.Length) ShowQuizResult(r);
+            else ShowQuizQuestion(r);
         }
 
-        AudioClip QuizNarration()
+        void ShowQuizResult(QuizRefs r)
         {
-            var clips = books[quizBook].Narration;
-            if (clips == null) return null;
-            for (int i = 0; i < clips.Length; i++)
-                if (clips[i] != null) return clips[i];
-            return null;
+            const float S = 2.77f;
+            int total = books[quizBook].Quiz.Length;
+            r.Pregunta.gameObject.SetActive(false);
+            r.Resultado.gameObject.SetActive(true);
+            r.ResultTexto.text = "Respondiste correctamente " + quizScore + " de " + total;
+            int ganadas = Mathf.Max(0, AppState.Stars - quizEstrellasInicio);
+            r.ResultEstrellas.text = "+" + ganadas + " estrellas";
+            SetProgress(r.ResultFill, (float)quizScore / total);
+            r.Content.sizeDelta = new Vector2(r.Content.sizeDelta.x, r.Resultado.sizeDelta.y + 44f * S);
+            r.Content.anchoredPosition = Vector2.zero;
         }
 
-        void PlayQuizAudio(QuizRefs refs)
+        // ---- Voces ----
+        AudioClip VozDe(string texto)
         {
-            var clip = QuizNarration();
-            if (clip == null || audioSrc == null) return;
-            if (audioSrc.isPlaying) { audioSrc.Stop(); UpdateQuizAudio(refs, false); return; }
+            if (vocesPorNombre == null)
+            {
+                vocesPorNombre = new Dictionary<string, AudioClip>();
+                if (vocesQuiz != null) foreach (var c in vocesQuiz) if (c != null) vocesPorNombre[c.name] = c;
+            }
+            var hablado = texto.Replace("______", "espacio en blanco");
+            using (var md5 = System.Security.Cryptography.MD5.Create())
+            {
+                var hash = md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(hablado));
+                var nombre = System.BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant().Substring(0, 12);
+                return vocesPorNombre.TryGetValue(nombre, out var clip) ? clip : null;
+            }
+        }
+
+        bool ReproducirVozSimple(string texto)
+        {
+            if (AppState.Muted) { Toast("Audio silenciado (actívalo en Configuración)"); return false; }
+            var clip = VozDe(texto);
+            if (clip == null || audioSrc == null) { Toast("Sin audio disponible"); return false; }
+            audioSrc.Stop();
             audioSrc.clip = clip;
             audioSrc.Play();
-            UpdateQuizAudio(refs, true);
-            StartCoroutine(WatchQuizAudio(refs));
+            return true;
         }
 
-        IEnumerator WatchQuizAudio(QuizRefs refs)
+        void ReproducirVoz(QuizRefs r, string texto)
         {
-            while (audioSrc != null && audioSrc.clip != null)
-            {
-                bool playing = audioSrc.isPlaying;
-                if (!playing && audioSrc.time >= audioSrc.clip.length - .05f) break;
-                UpdateQuizAudio(refs, true);
-                yield return null;
-            }
-            if (refs != null && refs.AudioPanel != null) UpdateQuizAudio(refs, false);
+            if (!ReproducirVozSimple(texto)) return;
+            r.Sonando = true; r.Pausado = false;
+            PintarReproductor(r);
+            AcomodarQuiz(r);
+            StartCoroutine(EsperarFinAudio(() => r.Pausado, () => { r.Sonando = false; AcomodarSiPregunta(r); }));
         }
 
-        void ToggleQuizAudio(QuizRefs refs)
+        void AcomodarSiPregunta(QuizRefs r)
         {
-            if (audioSrc == null || audioSrc.clip == null) return;
-            if (audioSrc.isPlaying) audioSrc.Pause();
-            else audioSrc.UnPause();
-            UpdateQuizAudio(refs, audioSrc.isPlaying || audioSrc.time > 0f);
+            if (r != null && r.Pregunta.gameObject.activeInHierarchy) AcomodarQuiz(r);
         }
 
-        void StopQuizAudio(QuizRefs refs)
+        void PausarVoz(QuizRefs r)
         {
-            if (audioSrc != null) { audioSrc.Stop(); audioSrc.clip = null; }
-            UpdateQuizAudio(refs, false);
+            r.Pausado = !r.Pausado;
+            if (r.Pausado) audioSrc.Pause(); else audioSrc.UnPause();
+            PintarReproductor(r);
         }
 
-        void UpdateQuizAudio(QuizRefs refs, bool visible)
+        void DetenerVoz(QuizRefs r)
         {
-            if (refs == null || refs.AudioPanel == null) return;
-            refs.AudioPanel.gameObject.SetActive(visible);
-            bool playing = audioSrc != null && audioSrc.isPlaying;
-            if (refs.AudioStatus != null) refs.AudioStatus.text = playing ? "Escuchando" : "Audio en pausa";
-            if (refs.AudioToggleIcon != null) refs.AudioToggleIcon.sprite = playing ? figPause : figPlay;
-            if (refs.AudioPulse != null)
-            {
-                refs.AudioPulse.color = new Color(UIKit.Blue.r, UIKit.Blue.g, UIKit.Blue.b, playing ? 1f : .45f);
-                var pulse = refs.AudioPulse.GetComponent<Anim>();
-                if (pulse != null) pulse.enabled = playing;
-            }
+            if (audioSrc != null) audioSrc.Stop();
+            r.Sonando = false; r.Pausado = false;
+            r.Reproductor.gameObject.SetActive(false);
         }
 
-        void ShowQuizResult(QuizRefs refs)
+        void PintarReproductor(QuizRefs r)
         {
-            refs.ResultPanel.gameObject.SetActive(true);
-            refs.ResultText.text = "¡Terminaste!\n" + quizScore + "/" + books[quizBook].Quiz.Length + " correctas";
-            SetProgress(refs.ResultFill, (float)quizScore / books[quizBook].Quiz.Length);
+            r.AudioStatus.text = r.Pausado ? "Audio en pausa" : "Escuchando";
+            r.AudioToggleIcon.sprite = r.Pausado ? figPlay : figPause;
+            r.AudioPulse.color = new Color(UIKit.Blue.r, UIKit.Blue.g, UIKit.Blue.b, r.Pausado ? .45f : 1f);
         }
     }
 }

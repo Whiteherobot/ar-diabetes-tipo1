@@ -16,46 +16,26 @@ namespace ARDiabetes
         public Texture2D[] Markers;
         public AudioClip[] Narration;
 
-        // Misma info, 3 niveles de lenguaje/detalle ([0]=5-9 años, [1]=10-12, [2]=13-15) — el
-        // perfil de edad no es solo cosmético (avatar/saludo): cambia el contenido que se lee.
+        // Misma info en 3 niveles de lenguaje. La app usa por ahora un solo nivel (DescPre, 10-12 años);
+        // DescKids y DescTeens se conservan por si se retoman.
         public string[] DescKids;
         public string[] DescPre;
         public string[] DescTeens;
 
-        public string Desc(int topic, AppState.AgeGroup age)
-        {
-            var arr = age == AppState.AgeGroup.Kids_5_9 ? DescKids
-                    : age == AppState.AgeGroup.Teens_13_15 ? DescTeens
-                    : DescPre; // Kids_10_12 y None (sin perfil) caen al nivel intermedio
-            return arr[topic];
-        }
+        public string Desc(int topic) => DescPre[topic];
 
-        // Juegos y Retos del libro: 3 juegos de tipos distintos (no todos son opción múltiple).
+        // Juegos y Retos del libro.
         public GameItem[] Quiz;
     }
 
-    public enum GameType { Choice, Matching, MultiSelect }
-
-    /// <summary>
-    /// Un juego/pregunta de "Juegos y Retos". Choice cubre opción múltiple, verdadero/falso
-    /// y completar-la-frase por igual (Options + Correct); Matching y MultiSelect usan sus
-    /// propios campos.
-    /// </summary>
+    /// <summary>Una pregunta de "Juegos y Retos". El tipo se deduce del texto: "Relaciona" muestra
+    /// parejas ("A — B"), y "______" es una frase por completar.</summary>
     public class GameItem
     {
-        public GameType Type = GameType.Choice;
         public string Q;
-
-        // Choice (MC / Verdadero-Falso / Completar frase): hasta 4 opciones.
         public string[] Options;
         public int Correct;
-
-        // Matching: Left[i] se relaciona correctamente con Right[i]. Right se muestra
-        // desordenado en pantalla; el emparejamiento correcto se valida por índice original.
-        public string[] Left;
-        public string[] Right;
-
-        // MultiSelect: Options[] + máscara de cuáles deben quedar seleccionadas.
-        public bool[] CorrectMask;
+        public bool EsRelacion => Q.Contains("Relaciona");
+        public bool EsFrase => Q.Contains("______");
     }
 }

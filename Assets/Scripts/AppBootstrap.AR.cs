@@ -29,44 +29,88 @@ namespace ARDiabetes
             var mv = viewerGetter();
             if (mv != null) { raw.texture = mv.Texture; raw.color = Color.white; }
             else raw.color = new Color(1, 1, 1, 0);
-            if (!Land) UIKit.Frac(raw.rectTransform, 0.06f, 0.18f, 0.94f, 0.78f);
+            if (!Land) UIKit.Frac(raw.rectTransform, 0.06f, 0.21f, 0.94f, 0.61f);
             else UIKit.Frac(raw.rectTransform, 0.24f, 0.10f, 0.76f, 0.90f);
 
             var titleTxt = UIKit.Text(p, "", 50, Color.white);
-            UIKit.Frac(titleTxt, 0.08f, 0.90f, 0.72f, 0.96f);
+            UIKit.Frac(titleTxt, 0.08f, 0.82f, 0.72f, 0.88f);
             titleTxt.alignment = TextAlignmentOptions.Left;
-            var pill = UIKit.Box(p, new Color(0, 0, 0, 0.48f), 30, "Hint");
-            var hint = UIKit.Text(pill.transform, "Apunta la cámara a tu libro", 15f * 2.77f, Color.white, TextAlignmentOptions.Center, FontStyles.Normal);
-            UIKit.Stretch(hint.rectTransform, 18);
-            UIKit.Frac(pill.rectTransform, 0.12f, 0.90f, 0.88f, 0.97f);
 
-            var surface = UIKit.Img(p, UIKit.Circle(), "Surface");
-            surface.color = new Color(0.93f, 0.56f, 0.68f, 0.18f);
-            surface.preserveAspect = true;
-            UIKit.Frac(surface, 0.27f, 0.36f, 0.73f, 0.55f);
-            var searching = UIKit.Text(p, "Buscando una superficie…", 16f * 2.77f, Color.white, TextAlignmentOptions.Center, FontStyles.Normal);
-            UIKit.Frac(searching, 0.18f, 0.28f, 0.82f, 0.35f);
+            const float S = 2.77f;
+            var pill = UIKit.Box(p, new Color(0, 0, 0, 0.54f), Mathf.RoundToInt(16f * S), "Hint");
+            pill.rectTransform.anchorMin = new Vector2(.07f, 1); pill.rectTransform.anchorMax = new Vector2(.93f, 1);
+            pill.rectTransform.pivot = new Vector2(.5f, 1);
+            pill.rectTransform.offsetMin = new Vector2(0, -(30f + 40f) * S); pill.rectTransform.offsetMax = new Vector2(0, -30f * S);
+            var hint = UIKit.Text(pill.transform, "Mueve tu teléfono lentamente sobre la página", 15f * S, Color.white, TextAlignmentOptions.Center, FontStyles.Normal);
+            UIKit.Stretch(hint.rectTransform, 9f * S);
 
-            // Controles circulares
-            // El texto de info ahora vive anclado en 3D junto al modelo (ARController.ToggleInfo),
-            // no como tarjeta 2D encima de la pantalla. Si todavía no se escaneó ningún marcador
-            // real (nada anclado en el mundo para mostrar), el botón cae a un toast con el mismo
-            // texto en vez de no hacer nada.
-            CircleBtn(p, icInfo, UIKit.Blue, Color.white, () =>
+            // Aviso mientras no hay cámara; se oculta cuando el AR real arranca (ARStateChanged)
+            var buscando = UIKit.Node("Buscando", p);
+            UIKit.Stretch(buscando);
+            buscando.SetAsFirstSibling();
+            bg.transform.SetAsFirstSibling();
+            var surface = UIKit.Img(buscando, UIKit.Circle(), "Surface");
+            surface.color = new Color(0.93f, 0.56f, 0.68f, 0.28f);
+            var srt = surface.rectTransform;
+            srt.anchorMin = srt.anchorMax = new Vector2(.5f, .34f);
+            srt.sizeDelta = new Vector2(280f * S, 70f * S);
+            var camIco = UIKit.Img(buscando, icCamera, "Camara"); camIco.color = UIKit.Hex("AEB9C4"); camIco.preserveAspect = true;
+            var crt = camIco.rectTransform;
+            crt.anchorMin = crt.anchorMax = new Vector2(.5f, .5f);
+            crt.sizeDelta = new Vector2(36f * S, 36f * S); crt.anchoredPosition = new Vector2(0, 58f * S);
+            var searching = UIKit.Text(buscando, "Buscando una superficie…", 16f * S, Color.white, TextAlignmentOptions.Center, FontStyles.Normal);
+            var txt = searching.rectTransform;
+            txt.anchorMin = txt.anchorMax = new Vector2(.5f, .5f);
+            txt.sizeDelta = new Vector2(320f * S, 26f * S); txt.anchoredPosition = new Vector2(0, 16f * S);
+            var permiso = UIKit.Text(buscando, "Permite el acceso a la cámara para ver tu entorno.", 15f * S, UIKit.Hex("AEB9C4"), TextAlignmentOptions.Center, FontStyles.Normal);
+            UIKit.Interlinea(permiso, 1.5f);
+            permiso.alignment = TextAlignmentOptions.Top;
+            var prt = permiso.rectTransform;
+            prt.anchorMin = prt.anchorMax = new Vector2(.5f, .5f);
+            prt.sizeDelta = new Vector2(280f * S, 50f * S); prt.anchoredPosition = new Vector2(0, -21f * S);
+
+            // Controles. El texto de info vive anclado en 3D junto al modelo (ARController.ToggleInfo);
+            // si todavía no se escaneó ningún marcador, el botón cae a un toast con el mismo texto.
+            ArBoton(p, icInfo, null, UIKit.Fisio, 58f, () =>
             {
                 if (arController != null && arController.HasSpawnedModel) arController.ToggleInfo();
                 else Toast(currentArInfoText);
-            }, 1f, 0.73f, 118, -82, 0);
-            CircleBtn(p, icAudio, UIKit.Nutri, Color.white, () => PlayNarration(), 1f, 0.62f, 118, -82, 0);
-            CircleBtn(p, icRotate, UIKit.Prog, Color.white, () => { if (modelViewer != null) modelViewer.ToggleSpin(); if (arController != null) arController.ToggleSpin(); }, 1f, 0.51f, 118, -82, 0);
-            CircleBtn(p, icClose, UIKit.Juegos, Color.white, onClose, 0.5f, 0f, 130, -190, 150);
-            CircleBtn(p, icCamera, UIKit.Clin, Color.white, () => StartCoroutine(FlashAndSave()), 0.5f, 0f, 176, 0, 160);
+            }, -2);
+            ArBoton(p, icAudio, null, UIKit.Scan, 58f, () => PlayNarration(), -1);
+            ArBoton(p, icRotate, null, UIKit.Blue, 58f, () => { modelViewer?.GirarPaso(25f); arController?.GirarPaso(25f); }, 0);
+            ArBoton(p, null, "+", UIKit.Nutri, 58f, () => { modelViewer?.CambiarTamano(.1f); arController?.CambiarTamano(.1f); }, 1);
+            ArBoton(p, null, "−", UIKit.Prog, 58f, () => { modelViewer?.CambiarTamano(-.1f); arController?.CambiarTamano(-.1f); }, 2);
+            ArBoton(p, icClose, null, UIKit.Hex("E85091"), 66f, onClose, -1, true);
+            ArBoton(p, icCamera, null, UIKit.Blue, 66f, () => StartCoroutine(FlashAndSave()), 1, true);
 
             var toastTxt = UIKit.Text(p, "", 36, Color.white);
             UIKit.Frac(toastTxt, 0.05f, 0.135f, 0.95f, 0.185f);
 
             p.gameObject.AddComponent<ArRefs>().Set(raw, bg, hint, titleTxt, toastTxt);
             return p;
+        }
+
+        // Botón circular con aro blanco. Lateral: fila bajo el 32 % de la pantalla;
+        // inferior (abajo = true): posicion -1 o 1 a cada lado del centro.
+        void ArBoton(RectTransform p, Sprite icono, string signo, Color color, float tamano, UnityEngine.Events.UnityAction click, int posicion, bool abajo = false)
+        {
+            const float S = 2.77f;
+            var boton = CircleBtn(p, null, new Color(1, 1, 1, .72f), Color.white, click,
+                abajo ? .5f : 1f, abajo ? 0f : .68f, tamano * S,
+                abajo ? posicion * 47f * S : -44f * S,
+                abajo ? 58f * S : -(29f + posicion * 70f) * S);
+            var interior = UIKit.Img(boton.transform, UIKit.Circle(), "Interior"); interior.color = color;
+            UIKit.Stretch(interior.rectTransform, 3f * S);
+            if (icono != null)
+            {
+                var ico = UIKit.Img(boton.transform, icono, "Icon"); ico.preserveAspect = true;
+                UIKit.Frac(ico, .3f, .3f, .7f, .7f);
+            }
+            else
+            {
+                var txt = UIKit.Text(boton.transform, signo, 29f * S, Color.white);
+                UIKit.Stretch(txt.rectTransform);
+            }
         }
 
         void ARStateChanged(bool ok)
@@ -77,7 +121,8 @@ namespace ARDiabetes
                 if (arBg != null) arBg.color = new Color(0, 0, 0, 0); // transparente: se ve la cámara
                 if (mainCam != null) mainCam.enabled = false;
                 if (globalBg != null) globalBg.gameObject.SetActive(false); // deja pasar el feed real
-                if (arHintText != null) arHintText.text = "Apunta la cámara al QR del tema";
+                if (arHintText != null) arHintText.text = "Mueve tu teléfono lentamente sobre la página";
+                MostrarBuscando(false);
                 // AR real activo: arRaw (el RawImage del visor de respaldo) queda oculto, pero sin
                 // esto su cámara offscreen (+ 2 luces, RenderTexture 800x900) seguía renderizando
                 // cada frame en paralelo a la cámara AR real — el doble de trabajo de GPU sin nada
@@ -88,14 +133,21 @@ namespace ARDiabetes
             else
             {
                 if (arRaw != null) arRaw.enabled = modelViewer != null;
-                if (arBg != null) arBg.color = UIKit.Hex("14212E"); // fondo oscuro para el visor 3D
+                if (arBg != null) arBg.color = UIKit.Hex("17212B"); // fondo oscuro para el visor 3D
+                MostrarBuscando(true);
                 if (mainCam != null) mainCam.enabled = true;
                 if (globalBg != null) globalBg.gameObject.SetActive(true);
                 if (arHintText != null) arHintText.text = modelViewer != null
-                    ? "Vista 3D interactiva · toca Girar para explorar"
+                    ? "Gira y cambia el tamaño del modelo con los botones"
                     : "AR no disponible en este dispositivo para el escaneo libre";
                 modelViewer?.SetActive(true);
             }
+        }
+
+        void MostrarBuscando(bool ver)
+        {
+            var grupo = arBg != null ? arBg.transform.parent.Find("Buscando") : null;
+            if (grupo != null) grupo.gameObject.SetActive(ver);
         }
 
         // Nota: usa Toast() (global, visible en cualquier pantalla) en vez de ShowARToast() porque

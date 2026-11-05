@@ -47,9 +47,6 @@ public static class ProjectSetup
         var boot = go.AddComponent<AppBootstrap>();
         boot.spLogo        = L("Assets/Imagenes/Diseño/personajes.png");
         boot.spWelcome     = L("Assets/Imagenes/Diseño/Avatar2.png");
-        boot.spAvatar1     = L("Assets/Imagenes/Diseño/Avatar1.png");
-        boot.spAvatar2     = L("Assets/Imagenes/Diseño/Avatar2.png");
-        boot.spAvatar3     = L("Assets/Imagenes/Diseño/Avatar3.png");
         boot.spIconFisio   = L("Assets/Imagenes/Diseño/Botones/Icon_Fisiológico.png");
         boot.spIconNutri   = L("Assets/Imagenes/Diseño/Botones/Icon_nutricional.png");
         boot.spIconClinico = L("Assets/Imagenes/Diseño/Botones/Icon_Clínico.png");
@@ -60,6 +57,15 @@ public static class ProjectSetup
         boot.robotCoral    = L("Assets/Imagenes/Diseño/Robots/Robot_coral.png");
         boot.robotVerde    = L("Assets/Imagenes/Diseño/Robots/Robot_verde.png");
         boot.robotAzul     = L("Assets/Imagenes/Diseño/Robots/Robot_azul.png");
+        boot.spPancreasPersonaje = L("Assets/Imagenes/Diseño/Personajes/Pancreas_personaje.png");
+        boot.robotMorado   = L("Assets/Imagenes/Diseño/Robots/Robot_morado.png");
+        boot.robotNaranja  = L("Assets/Imagenes/Diseño/Robots/Robot_naranja.png");
+        boot.robotRosa     = L("Assets/Imagenes/Diseño/Robots/Robot_rosa.png");
+        boot.figCamera     = L("Assets/Imagenes/UI/Figma/ic_fig_camera.png");
+        boot.figCheck      = L("Assets/Imagenes/UI/Figma/ic_fig_check.png");
+        boot.figX          = L("Assets/Imagenes/UI/Figma/ic_fig_x.png");
+        boot.figKit        = L("Assets/Imagenes/UI/Figma/ic_fig_kit.png");
+        boot.figTemas = System.Array.ConvertAll(new[] { "help", "pancreas", "drop", "gear", "plate", "food", "apple", "clock", "syringe", "warning", "drop", "calendar" }, n => L("Assets/Imagenes/UI/Figma/ic_fig_" + n + ".png"));
         boot.figScan       = L("Assets/Imagenes/UI/Figma/ic_fig_scan.png");
         boot.figGame       = L("Assets/Imagenes/UI/Figma/ic_fig_game.png");
         boot.figChevron    = L("Assets/Imagenes/UI/Figma/ic_fig_chevron.png");
@@ -105,6 +111,11 @@ public static class ProjectSetup
         boot.icAlert    = L("Assets/Imagenes/UI/ic_alert.png");
         boot.icCalendar = L("Assets/Imagenes/UI/ic_calendar.png");
 
+        boot.vocesQuiz = System.Array.ConvertAll(AssetDatabase.FindAssets("t:AudioClip", new[] { "Assets/Audio/Quiz" }),
+            g => AssetDatabase.LoadAssetAtPath<AudioClip>(AssetDatabase.GUIDToAssetPath(g)));
+        boot.ayudaClips = new AudioClip[6];
+        for (int i = 0; i < 6; i++)
+            boot.ayudaClips[i] = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Ayuda/ayuda_{i}.wav");
         boot.narracion = new AudioClip[12];
         for (int i = 0; i < 12; i++)
         {

@@ -40,22 +40,17 @@ namespace ARDiabetes
                     "La insulina actúa como una llave molecular: se une a receptores en la membrana celular y permite el transporte de glucosa al interior para producir energía.",
                     "El eje páncreas-insulina-glucosa regula tu metabolismo energético: sin suficiente insulina, la glucosa se acumula en la sangre en vez de entrar en las células."
                 },
-                TopicIcon = new[] { icQuestion, icPancreas, icDrop, icGear },
+                TopicIcon = new[] { figTemas[0], figTemas[1], figTemas[2], figTemas[3] },
                 Markers = markersFisio,
                 Narration = new[] { N(0), N(1), N(2), N(3) },
                 Quiz = new[]
                 {
-                    new GameItem { Type = GameType.Matching, Q = "Relaciona cada célula con lo que le corresponde:",
-                        Left = new[] { "Célula beta", "Célula alfa", "Célula delta" },
-                        Right = new[] { "Produce insulina", "Produce glucagón", "Mantiene el equilibrio entre las otras dos" } },
-                    new GameItem { Q = "Cuando la glucosa entra a la célula, se transforma en _______, que es la energía que la célula realmente puede usar para hacer su trabajo.",
+                    new GameItem { Q = "Relaciona cada célula con lo que le corresponde:",
+                        Options = new[] { "Célula beta — insulina", "Célula alfa — glucosa", "Glóbulo rojo — insulina", "Neurona — glucógeno" }, Correct = 0 },
+                    new GameItem { Q = "Cuando la glucosa entra a la célula, se transforma en ______ que es la energía que la célula realmente puede usar para hacer su trabajo.",
                         Options = new[] { "ATP", "glucógeno", "insulina", "agua" }, Correct = 0 },
                     new GameItem { Q = "¿Qué le permite a la insulina ayudar a que la glucosa entre a la célula?",
-                        Options = new[] {
-                            "Abre la célula físicamente, como una llave que abre una cerradura",
-                            "Se une a un receptor en la célula y activa una señal interna que hace que la propia célula abra su puerta",
-                            "Viaja dentro de la glucosa y la empuja hacia adentro",
-                            "No hace nada, la glucosa entra sola" }, Correct = 1 },
+                        Options = new[] { "Un receptor en la célula", "El agua", "Los glóbulos rojos", "El calcio de los huesos" }, Correct = 0 }
                 },
             };
             books[1] = new BookDef
@@ -85,19 +80,17 @@ namespace ARDiabetes
                     "Priorizar fibra, proteínas magras y grasas saludables enlentece la absorción de glucosa, reduciendo picos glucémicos bruscos.",
                     "Mantener horarios regulares de comida, buena hidratación y control de azúcares simples mejora la variabilidad glucémica a largo plazo."
                 },
-                TopicIcon = new[] { icPlate, icBread, icApple, icClock },
+                TopicIcon = new[] { figTemas[4], figTemas[5], figTemas[6], figTemas[7] },
                 Markers = markersNutri,
                 Narration = new[] { N(4), N(5), N(6), N(7) },
                 Quiz = new[]
                 {
-                    new GameItem { Type = GameType.Matching, Q = "Relaciona cada alimento con su grupo correspondiente:",
-                        Left = new[] { "Pollo", "Manzana", "Arroz", "Yogur", "Palta" },
-                        Right = new[] { "Proteínas", "Frutas y verduras", "Cereales", "Lácteos", "Grasas saludables" } },
-                    new GameItem { Type = GameType.MultiSelect, Q = "Selecciona los alimentos que contienen carbohidratos:",
-                        Options = new[] { "Pan", "Pollo", "Plátano", "Huevo", "Leche", "Queso" },
-                        CorrectMask = new[] { true, false, true, false, false, false } },
-                    new GameItem { Q = "Verdadero o falso: los alimentos nos dan energía para movernos, crecer y pensar.",
-                        Options = new[] { "Verdadero", "Falso" }, Correct = 0 },
+                    new GameItem { Q = "¿Qué combinación forma un plato saludable?",
+                        Options = new[] { "Verduras, proteína y carbohidratos", "Solo dulces", "Solo carne", "Bebidas azucaradas" }, Correct = 0 },
+                    new GameItem { Q = "¿Qué nutriente se convierte principalmente en glucosa?",
+                        Options = new[] { "Carbohidratos", "Agua", "Vitaminas", "Minerales" }, Correct = 0 },
+                    new GameItem { Q = "¿Cuál es una buena opción para una colación?",
+                        Options = new[] { "Fruta con yogur natural", "Refresco", "Caramelos", "Papas fritas" }, Correct = 0 }
                 },
             };
             books[2] = new BookDef
@@ -127,17 +120,17 @@ namespace ARDiabetes
                     "El automonitoreo (glucómetro o sensor continuo) permite identificar patrones glucémicos y ajustar decisiones de insulina, alimentación y actividad física.",
                     "La inspección diaria de los pies, la conservación adecuada de la insulina en frío y llevar una fuente rápida de glucosa son hábitos clave para prevenir complicaciones."
                 },
-                TopicIcon = new[] { icSyringe, icAlert, icDrop, icCalendar },
+                TopicIcon = new[] { figTemas[8], figTemas[9], figTemas[10], figTemas[11] },
                 Markers = markersClinico,
                 Narration = new[] { N(8), N(9), N(10), N(11) },
                 Quiz = new[]
                 {
-                    new GameItem { Q = "¿Qué necesito para medir mi glucosa?",
-                        Options = new[] { "Un lápiz", "Un glucómetro y una tira reactiva", "Un termómetro" }, Correct = 1 },
-                    new GameItem { Q = "¿Para qué sirve la insulina?",
-                        Options = new[] { "Para que la glucosa entre en las células", "Para cambiar el color de la sangre", "Para medir la temperatura" }, Correct = 0 },
-                    new GameItem { Q = "¿Cuál de estos hábitos ayuda a cuidar tu salud?",
-                        Options = new[] { "Dormir bien y comer saludable", "Comer solo dulces", "No tomar agua" }, Correct = 0 },
+                    new GameItem { Q = "¿Qué necesitas para medir tu glucosa?",
+                        Options = new[] { "Glucómetro", "Termómetro", "Regla", "Reloj" }, Correct = 0 },
+                    new GameItem { Q = "La insulina debe aplicarse siguiendo las indicaciones de:",
+                        Options = new[] { "Tu equipo de salud", "Cualquier amigo", "Internet", "Nadie" }, Correct = 0 },
+                    new GameItem { Q = "¿Qué debes hacer antes de medir tu glucosa?",
+                        Options = new[] { "Lavar y secar tus manos", "Comer un dulce", "Correr", "Dormir" }, Correct = 0 }
                 },
             };
         }

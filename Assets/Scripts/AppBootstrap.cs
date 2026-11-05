@@ -40,11 +40,11 @@ namespace ARDiabetes
         };
         [Header("Sprites (asignados por ProjectSetup)")]
         public Sprite spLogo;
-        public Sprite spWelcome;
-        public Sprite spAvatar1, spAvatar2, spAvatar3;
+        public Sprite spWelcome, spPancreasPersonaje, figKit, figCamera, figCheck, figX;
+        public Sprite[] figTemas; // íconos de los 12 temas, en orden de libro
         public Sprite spIconFisio, spIconNutri, spIconClinico, spIconScan, spIconJuegos, spIconProgreso;
         public Sprite spStar;
-        public Sprite robotCoral, robotVerde, robotAzul;
+        public Sprite robotCoral, robotVerde, robotAzul, robotMorado, robotNaranja, robotRosa;
         public Sprite figScan, figGame, figChevron, figStar, figBack, figBook, figPlay;
         public Sprite figInfo, figWarning, figSpeaker, figPause, figStop;
         public Sprite figHome, figChart, figSettings, figHelp;
@@ -57,6 +57,8 @@ namespace ARDiabetes
         public Sprite icPlate, icBread, icApple, icClock, icSyringe, icAlert, icCalendar;
         [Header("Audio narración (12: 4 por libro)")]
         public AudioClip[] narracion;
+        public AudioClip[] vocesQuiz; // nombre de archivo = md5 del texto hablado
+        public AudioClip[] ayudaClips; // 0 bienvenida, 1-4 preguntas, 5 consejos
         AudioSource audioSrc;
         [Header("Música de fondo")]
         public AudioClip musicaFondo;
@@ -88,18 +90,11 @@ namespace ARDiabetes
         bool builtLandscape;
         bool captureStarted;
         static int quizBook, quizQ, quizScore;
-        bool quizAnswered;
-        // Estado del juego de Matching (tap-to-pair) para la pregunta actual.
-        int[] matchRightOrder;
-        bool[] matchDoneLeft, matchDoneRight;
-        int matchSelected = -1, matchCount;
-        bool matchLocked;
-        // Estado del juego de MultiSelect para la pregunta actual.
-        bool[] msSelected;
-        bool msAnswered;
+        int quizEstrellasInicio;
+        Dictionary<string, AudioClip> vocesPorNombre;
 
         TMP_Text starLabel, toast, holaText, nivelText;
-        Image menuAvatar, nivelFill;
+        Image nivelFill;
         ScrollRect menuScroll;
 
         // --- Libros (5A/5B/5C) ---
@@ -126,15 +121,13 @@ namespace ARDiabetes
         bool Land => !PreviewVertical && Screen.width > Screen.height;
         static RectTransform R(Component c) => (RectTransform)c.transform;
 
-        Sprite AvatarFor(AppState.AgeGroup g)
+        Sprite[] Personajes => new[] { robotVerde, robotAzul, robotCoral, robotMorado, robotNaranja, robotRosa };
+
+        Sprite PersonajeElegido()
         {
-            switch (g)
-            {
-                case AppState.AgeGroup.Kids_5_9: return spAvatar1;
-                case AppState.AgeGroup.Kids_10_12: return spAvatar2;
-                case AppState.AgeGroup.Teens_13_15: return spAvatar3;
-                default: return spAvatar2;
-            }
+            var lista = Personajes;
+            var elegido = lista[Mathf.Clamp(AppState.Character, 0, lista.Length - 1)];
+            return elegido != null ? elegido : robotVerde;
         }
 
         void Awake()
@@ -219,9 +212,9 @@ namespace ARDiabetes
             }
             // El texto de info ahora vive anclado en el espacio 3D junto al modelo (no como
             // tarjeta 2D encima de la pantalla) — ARController lo arma solo, pidiendo acá el
-            // texto real (depende de la edad elegida, por eso se resuelve en el momento, no se
+            // texto real (se resuelve en el momento, no se
             // precalcula una vez).
-            if (arController != null) arController.GetInfoText = (b, t) => books[b].Desc(t, AppState.Age);
+            if (arController != null) arController.GetInfoText = (b, t) => books[b].Desc(t);
 
             StartCoroutine(InitialBuild());
         }

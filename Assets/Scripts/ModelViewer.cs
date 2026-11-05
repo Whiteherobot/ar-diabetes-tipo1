@@ -111,6 +111,17 @@ namespace ARDiabetes
 
         public void ToggleSpin() { if (spinner != null) spinner.spinning = !spinner.spinning; }
 
+        public void GirarPaso(float degrees) { if (spinner != null) spinner.spinning = false; AddYaw(degrees); }
+
+        float userScale = 1f;
+
+        public void CambiarTamano(float paso)
+        {
+            float nuevo = Mathf.Clamp(userScale + paso, .7f, 1.4f);
+            if (holder != null) holder.localScale *= nuevo / userScale;
+            userScale = nuevo;
+        }
+
         /// <summary>Enciende/apaga el render de este visor. Solo debe estar activo el del libro
         /// que se está mostrando en ese momento.</summary>
         public void SetActive(bool on) { if (cam != null) cam.enabled = on; }

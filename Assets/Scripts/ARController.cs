@@ -261,6 +261,7 @@ namespace ARDiabetes
                 spawned = Instantiate(entry.Model);
                 spawned.transform.localScale = Vector3.one; // el prefab puede traer escala no uniforme (se veía "alargado")
                 userYaw = 0f;
+                userScale = 1f;
                 ModelViewer.StripEmbeddedCamerasAndLights(spawned); // el FBX trae cámara/luz incrustada
                 var sh = Shader.Find("Standard");
                 if (sh != null)
@@ -351,6 +352,17 @@ namespace ARDiabetes
 
         /// <summary>Rota el modelo anclado (arrastre táctil), sin perder su anclaje sobre el marcador.</summary>
         public void AddYaw(float degrees) { userYaw += degrees; }
+
+        public void GirarPaso(float degrees) { autoSpin = false; userYaw += degrees; }
+
+        float userScale = 1f;
+
+        public void CambiarTamano(float paso)
+        {
+            float nuevo = Mathf.Clamp(userScale + paso, .7f, 1.4f);
+            if (spawned != null) spawned.transform.localScale *= nuevo / userScale;
+            userScale = nuevo;
+        }
 
         // Auto-giro continuo (además del arrastre manual, que se suma sobre el mismo userYaw).
         // BUG real encontrado en dispositivo (2026-07-17): con un marcador físico QUIETO, ARCore

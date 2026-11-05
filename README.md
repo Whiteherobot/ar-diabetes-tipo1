@@ -115,7 +115,7 @@ ARDiabetes/
 |---|---|
 | `AppBootstrap.*.cs` | El corazón de la app: construye **todas** las pantallas por código, un método `Build...()` por pantalla. Repartido en varios archivos `partial class AppBootstrap` por responsabilidad (mismo comportamiento, solo organización) — ver tabla siguiente. |
 | `UIKit.cs` | Mini design-system: paleta de colores, generador de sprites (rounded-rect, círculos, degradados) y fábricas de widgets (botones, cajas, texto, sombras) + helpers de layout responsivo por fracciones (`Frac`, `Cell`). |
-| `AppState.cs` | Estado persistente vía `PlayerPrefs` (edad elegida, estrellas, nivel, racha). |
+| `AppState.cs` | Estado persistente vía `PlayerPrefs` (nombre y personaje elegidos, estrellas, nivel, racha). |
 | `Carousel.cs` | Carrusel de onboarding: swipe con snap, rubber-band, auto-avance, puntos indicadores. |
 | `Appear.cs` | Animación de entrada (fade + slide) para tarjetas/tiles, con delay para efecto escalonado. |
 | `PressEffect.cs` | Feedback táctil (escala el botón al presionar). |
@@ -138,7 +138,7 @@ ARDiabetes/
 | `AppBootstrap.Screens.Libros.cs` | Pantallas 5A/5B/5C — Temas → Detalle de cada libro (la Experiencia AR en sí vive en `.AR.cs`). |
 | `AppBootstrap.AR.cs` | Núcleo de la Experiencia AR (cámara/modelo anclado), narración y captura de foto. |
 | `AppBootstrap.Juegos.cs` | Pantalla 6: hub de Juegos y Retos + el quiz completo (Choice/Matching/MultiSelect). |
-| `AppBootstrap.Refs.cs` | Clases auxiliares `*Refs` (contenedores de referencias de UI por pantalla). |
+| `*Refs.cs` | Clases auxiliares `*Refs` (contenedores de referencias de UI por pantalla). |
 
 ---
 

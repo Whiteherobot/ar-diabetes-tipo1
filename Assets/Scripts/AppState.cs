@@ -6,13 +6,13 @@ namespace ARDiabetes
 {
     /// <summary>
     /// Estado global de la app que persiste entre pantallas (y entre sesiones vía PlayerPrefs).
-    /// Edad, estrellas (con varias formas reales de ganarlas), temas vistos, racha diaria y silencio.
+    /// Nombre, personaje, estrellas (con varias formas reales de ganarlas), temas vistos, racha diaria y silencio.
     /// </summary>
     public static class AppState
     {
-        public enum AgeGroup { None = 0, Kids_5_9 = 1, Kids_10_12 = 2, Teens_13_15 = 3 }
 
-        const string KeyAge = "ar_age_group";
+        const string KeyPlayerName = "ar_player_name";
+        const string KeyCharacter = "ar_character";
         const string KeyStars = "ar_stars";
         const string KeyTopicsMask = "ar_topics_seen";   // bit i = libro*4 + tema (leer el texto)
         const string KeyAudioMask = "ar_audio_heard";    // bit i = libro*4 + tema (escuchar narración)
@@ -30,10 +30,17 @@ namespace ARDiabetes
         const int StarsPerLevel = 50;
         static readonly DateTime Epoch = new DateTime(2020, 1, 1);
 
-        public static AgeGroup Age
+        public static string PlayerName
         {
-            get => (AgeGroup)PlayerPrefs.GetInt(KeyAge, 0);
-            set { PlayerPrefs.SetInt(KeyAge, (int)value); PlayerPrefs.Save(); }
+            get => PlayerPrefs.GetString(KeyPlayerName, "");
+            // sin < ni > para que el nombre no se interprete como etiqueta de texto enriquecido
+            set { PlayerPrefs.SetString(KeyPlayerName, (value ?? "").Replace("<", "").Replace(">", "")); PlayerPrefs.Save(); }
+        }
+
+        public static int Character
+        {
+            get => PlayerPrefs.GetInt(KeyCharacter, 0);
+            set { PlayerPrefs.SetInt(KeyCharacter, value); PlayerPrefs.Save(); }
         }
 
         public static int Stars
@@ -283,7 +290,7 @@ namespace ARDiabetes
 
         public static bool IsBadgeUnlocked(int i) => (PlayerPrefs.GetInt(KeyBonusMask, 0) & (1 << i)) != 0;
 
-        /// <summary>Reinicia estrellas, temas vistos/escuchados/escaneados, bonus y racha (no toca la edad).</summary>
+        /// <summary>Reinicia estrellas, temas vistos/escuchados/escaneados, bonus y racha (no toca nombre ni personaje).</summary>
         public static void ResetProgress()
         {
             PlayerPrefs.SetInt(KeyStars, 0);
@@ -297,26 +304,13 @@ namespace ARDiabetes
             PlayerPrefs.Save();
         }
 
-        public static string AgeLabel(AgeGroup g)
+        /// <summary>Saludo con el nombre elegido; sin nombre, usa "explorador".</summary>
+        public static string Greeting
         {
-            switch (g)
+            get
             {
-                case AgeGroup.Kids_5_9: return "5 - 9 años";
-                case AgeGroup.Kids_10_12: return "10 - 12 años";
-                case AgeGroup.Teens_13_15: return "13 - 15 años";
-                default: return "Sin perfil";
-            }
-        }
-
-        /// <summary>Saludo del menú, con tono distinto según el perfil de edad elegido.</summary>
-        public static string GreetingFor(AgeGroup g)
-        {
-            switch (g)
-            {
-                case AgeGroup.Kids_5_9: return "¡Hola, campeón!";
-                case AgeGroup.Kids_10_12: return "¡Hola, explorador!";
-                case AgeGroup.Teens_13_15: return "¡Hola de nuevo!";
-                default: return "¡Hola!";
+                var nombre = PlayerName.Trim();
+                return "¡Hola, " + (nombre.Length > 0 ? nombre : "explorador") + "!";
             }
         }
     }

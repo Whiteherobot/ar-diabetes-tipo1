@@ -115,16 +115,58 @@ namespace ARDiabetes
             return im;
         }
 
-        public static void AddShadow(Image box, int radius, float alpha = 0.14f, float dy = -8f, float grow = 10f)
+        const int blur = 60;
+
+        // Sombra difusa como el box-shadow del diseño (no una copia sólida de la tarjeta).
+        // grow se conserva por compatibilidad: el alcance lo da el difuminado.
+        public static Image AddShadow(Image box, int radius, float alpha = 0.14f, float dy = -8f, float grow = 10f)
         {
             var brt = box.rectTransform;
-            var sh = Box(brt.parent, new Color(0.08f, 0.16f, 0.30f, alpha), radius, "Shadow");
+            var sh = Img(brt.parent, Difuminado(radius, blur), "Shadow");
+            sh.type = Image.Type.Sliced;
+            sh.color = new Color(0.08f, 0.16f, 0.30f, alpha * .6f);
             var srt = sh.rectTransform;
             srt.anchorMin = brt.anchorMin; srt.anchorMax = brt.anchorMax; srt.pivot = brt.pivot;
-            srt.offsetMin = brt.offsetMin + new Vector2(-grow, -grow + dy);
-            srt.offsetMax = brt.offsetMax + new Vector2(grow, grow + dy);
+            float baja = dy * 2.5f; // las sombras del diseño caen hacia abajo
+            srt.offsetMin = brt.offsetMin + new Vector2(-blur, -blur + baja);
+            srt.offsetMax = brt.offsetMax + new Vector2(blur, blur + baja);
             sh.raycastTarget = false;
             srt.SetSiblingIndex(brt.GetSiblingIndex());
+            return sh;
+        }
+
+        static readonly Dictionary<long, Sprite> _difuminados = new Dictionary<long, Sprite>();
+
+        // Reubica la sombra cuando la tarjeta cambia de lugar o de alto (pasar el mismo dy de AddShadow).
+        public static void AjustarSombra(RectTransform sombra, RectTransform box, float dy)
+        {
+            sombra.anchorMin = box.anchorMin; sombra.anchorMax = box.anchorMax; sombra.pivot = box.pivot;
+            sombra.sizeDelta = box.sizeDelta + new Vector2(blur * 2f, blur * 2f);
+            sombra.anchoredPosition = box.anchoredPosition + new Vector2(0, blur + dy * 2.5f);
+        }
+
+        static Sprite Difuminado(int radius, int blur)
+        {
+            long clave = ((long)radius << 16) | (uint)blur;
+            if (_difuminados.TryGetValue(clave, out var s)) return s;
+            int r = Mathf.Max(2, radius), borde = r + blur, tex = borde * 2 + 4;
+            var t = new Texture2D(tex, tex, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var px = new Color32[tex * tex];
+            for (int y = 0; y < tex; y++)
+                for (int x = 0; x < tex; x++)
+                {
+                    float cx = Mathf.Clamp(x, borde, tex - 1 - borde);
+                    float cy = Mathf.Clamp(y, borde, tex - 1 - borde);
+                    float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) - r;
+                    // como box-shadow: en el borde de la tarjeta ya va a la mitad
+                    float a = .5f * (1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(d / blur)));
+                    px[y * tex + x] = new Color32(255, 255, 255, (byte)(a * 255));
+                }
+            t.SetPixels32(px); t.Apply();
+            s = Sprite.Create(t, new Rect(0, 0, tex, tex), new Vector2(0.5f, 0.5f), 100f, 0,
+                              SpriteMeshType.FullRect, new Vector4(borde, borde, borde, borde));
+            _difuminados[clave] = s;
+            return s;
         }
 
         public static TMP_Text Text(Transform parent, string s, float size, Color c,
@@ -134,7 +176,10 @@ namespace ARDiabetes
             var rt = Node("Text", parent);
             var t = rt.gameObject.AddComponent<TextMeshProUGUI>();
             if (Font != null) t.font = Font;
-            t.text = s; t.color = c; t.alignment = al; t.fontStyle = style;
+            t.text = s; t.color = c; t.alignment = al;
+            // "Bold" equivale al peso 800 del diseño; la tabla de pesos de Nunito elige el archivo.
+            if ((style & FontStyles.Bold) != 0) { t.fontStyle = style & ~FontStyles.Bold; t.fontWeight = FontWeight.Heavy; }
+            else t.fontStyle = style;
             t.enableWordWrapping = true; t.raycastTarget = false;
             // Auto-ajuste: el texto nunca desborda su caja (clave para portrait/landscape).
             t.enableAutoSizing = true;
@@ -160,6 +205,44 @@ namespace ARDiabetes
                 Stretch(t.rectTransform);
             }
             return b;
+        }
+
+        // Copia oscura de la imagen, como el drop-shadow de los robots del diseño: separa al robot
+        // de una tarjeta del mismo color.
+        public static void SombraImagen(Image img, float alpha, float dy)
+        {
+            var sombra = Img(img.rectTransform.parent, img.sprite, "SombraRobot");
+            sombra.color = new Color(0.1f, 0.16f, 0.25f, alpha); sombra.preserveAspect = true;
+            var o = img.rectTransform; var d = sombra.rectTransform;
+            d.anchorMin = o.anchorMin; d.anchorMax = o.anchorMax; d.pivot = o.pivot;
+            d.sizeDelta = o.sizeDelta; d.anchoredPosition = o.anchoredPosition + new Vector2(0, -dy);
+            d.SetSiblingIndex(o.GetSiblingIndex());
+        }
+
+        // Tamaño fijo, para poder medir el texto y acomodar lo que viene debajo.
+        public static void TamanoFijo(TMP_Text t, float size)
+        {
+            t.enableAutoSizing = false;
+            t.fontSize = size * TextScale;
+        }
+
+        public static float Alto(TMP_Text t, string s, float ancho) => t.GetPreferredValues(s, ancho, 0f).y;
+
+        public static void Scroll(RectTransform viewport, RectTransform content)
+        {
+            var scroll = viewport.gameObject.AddComponent<ScrollRect>();
+            scroll.content = content; scroll.viewport = viewport;
+            scroll.horizontal = false; scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Elastic; scroll.inertia = true;
+            scroll.scrollSensitivity = 8f;
+        }
+
+        // Texto en bloque como en CSS: arriba a la izquierda y con line-height relativo a la fuente.
+        // 1.364 es la altura de línea propia de Nunito.
+        public static void Interlinea(TMP_Text t, float alturaCss)
+        {
+            t.alignment = TextAlignmentOptions.TopLeft;
+            t.lineSpacing = (alturaCss - 1.364f) * 100f;
         }
 
         // ---------- Layout helpers ----------
