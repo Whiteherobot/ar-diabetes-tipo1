@@ -190,6 +190,48 @@ namespace ARDiabetes
         }
 
         // ============================================================
+        // ARANIM=0,3,14: graba la animación de entrada de cada pantalla desde el player
+        // (25 fotos a 10 por segundo, anim_NN_fFF.png). En el quiz responde bien en la foto 5
+        // y en Configuración abre la confirmación de reinicio, para ver esas animaciones.
+        static System.Collections.Generic.Queue<int> animPendientes;
+        IEnumerator AutoAnim(string lista, string dir, int escala)
+        {
+            if (animPendientes == null)
+            {
+                animPendientes = new System.Collections.Generic.Queue<int>();
+                foreach (var v in lista.Split(',')) animPendientes.Enqueue(int.Parse(v));
+            }
+            yield return new WaitForSeconds(1f);
+            while (animPendientes.Count > 0)
+            {
+                int i = animPendientes.Peek();
+                if (stubs.ContainsKey(panels[i])) { ShowOnly(panels[i], false); yield break; } // otra escena: sigue allá
+                animPendientes.Dequeue();
+                ShowOnly(panels[i], false);
+                foreach (var p in panels) if (p != null) p.gameObject.SetActive(false);
+                yield return null;
+                ShowOnly(panels[i], true);
+                for (int f = 0; f < 25; f++)
+                {
+                    yield return new WaitForEndOfFrame();
+                    ScreenCapture.CaptureScreenshot(System.IO.Path.Combine(dir, "anim_" + i.ToString("00") + "_f" + f.ToString("00") + ".png"), escala);
+                    if (f == 4)
+                    {
+                        var quiz = panels[i].GetComponent<QuizRefs>();
+                        if (quiz != null)
+                        {
+                            var q = books[quizBook].Quiz[quizQ];
+                            for (int k = 0; k < 4; k++) if (quiz.Orden[k] == q.Correct) { ResponderQuiz(quiz, k); break; }
+                        }
+                        var modal = panels[i].Find("ResetModal");
+                        if (modal != null) modal.gameObject.SetActive(true);
+                    }
+                    yield return new WaitForSeconds(0.1f);
+                }
+            }
+            Application.Quit();
+        }
+
         IEnumerator AutoCapture()
         {
             string dir = Environment.GetEnvironmentVariable("ARCAP_DIR");
@@ -198,6 +240,8 @@ namespace ARDiabetes
             // ARCAP_ESCALA=2 saca la captura al doble de la ventana (p. ej. 540x960 -> 1080x1920).
             int.TryParse(Environment.GetEnvironmentVariable("ARCAP_ESCALA"), out int escala);
             if (escala < 1) escala = 1;
+            string anim = Environment.GetEnvironmentVariable("ARANIM");
+            if (!string.IsNullOrEmpty(anim)) { StartCoroutine(AutoAnim(anim, dir, escala)); yield break; }
             currentBook = 0; currentTopic = 1;
             yield return new WaitForSeconds(1f);
             // La app está dividida en escenas: los paneles de otra escena son stubs que la cargan.
