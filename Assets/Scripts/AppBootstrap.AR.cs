@@ -211,6 +211,27 @@ namespace ARDiabetes
                 ScreenCapture.CaptureScreenshot(System.IO.Path.Combine(dir, "cap_" + panels[i].name + suf + ".png"), escala);
                 capturados.Add(i);
                 yield return new WaitForSeconds(0.3f);
+                // Carrusel (Bienvenida): una captura por cada slide siguiente.
+                var car = panels[i].GetComponentInChildren<Carousel>();
+                if (car != null)
+                    for (int k = 2; k <= car.count; k++)
+                    {
+                        car.Next();
+                        yield return new WaitForSeconds(1f);
+                        yield return new WaitForEndOfFrame();
+                        ScreenCapture.CaptureScreenshot(System.IO.Path.Combine(dir, "cap_" + panels[i].name + suf + "_" + k + ".png"), escala);
+                        yield return new WaitForSeconds(0.3f);
+                    }
+                // Si la pantalla tiene scroll, otra captura con el final del contenido.
+                var sr = panels[i].GetComponentInChildren<ScrollRect>();
+                if (sr != null && sr.content != null && sr.content.rect.height > ((RectTransform)sr.transform).rect.height + 1f)
+                {
+                    sr.verticalNormalizedPosition = 0f;
+                    yield return new WaitForSeconds(0.5f);
+                    yield return new WaitForEndOfFrame();
+                    ScreenCapture.CaptureScreenshot(System.IO.Path.Combine(dir, "cap_" + panels[i].name + suf + "_fin.png"), escala);
+                    yield return new WaitForSeconds(0.3f);
+                }
             }
             yield return new WaitForSeconds(0.4f);
             for (int i = 0; i < panels.Length; i++)

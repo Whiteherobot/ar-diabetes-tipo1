@@ -93,6 +93,20 @@ namespace ARDiabetes
                     var trio = BuildRobotGroup(slide);
                     UIKit.Frac(trio, .08f, .04f, .92f, .52f);
                 }
+                else if (i == 1)
+                {
+                    // El ícono de escanear es blanco: va sobre la caja naranja, como en la tarjeta del Inicio.
+                    float lado = Mathf.Min(w * .36f, h * .30f);
+                    var caja = UIKit.Box(slide, UIKit.Scan, Mathf.RoundToInt(lado * .30f), "ScanIcon");
+                    var crt = caja.rectTransform;
+                    crt.anchorMin = crt.anchorMax = new Vector2(.5f, .27f);
+                    crt.sizeDelta = new Vector2(lado, lado);
+                    crt.anchoredPosition = Vector2.zero;
+                    crt.localRotation = Quaternion.Euler(0, 0, 4f);
+                    UIKit.AddShadow(caja, Mathf.RoundToInt(lado * .30f), .14f, -8f, 8f);
+                    var ic = UIKit.Img(caja.transform, imgs[i], "Img");
+                    ic.color = Color.white; ic.preserveAspect = true; UIKit.Stretch(ic.rectTransform, lado * .17f);
+                }
                 else
                 {
                     var im = UIKit.Img(slide, imgs[i], "Img"); im.preserveAspect = true;
