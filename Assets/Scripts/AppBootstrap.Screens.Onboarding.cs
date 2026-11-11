@@ -13,29 +13,63 @@ namespace ARDiabetes
         RectTransform BuildInicio()
         {
             var p = Panel("1_Inicio");
-            const float S = 2.77f;
-            var group = BuildRobotGroup(p);
-            UIKit.Top(group, 0f, Land ? 300f * S : 180f * S, 280f * S, 188f * S);
-            var t1 = UIKit.Text(p, "Diabetes Tipo 1", 36f * S, UIKit.Navy);
-            var t2 = UIKit.Text(p, "Aprendo, entiendo y me cuido", 17f * S, UIKit.Hex("55708F"), TextAlignmentOptions.Center, FontStyles.Normal);
-            var b = UIKit.Button(p, "COMENZAR", UIKit.Blue, Color.white, Mathf.RoundToInt(17f * S), () => ShowOnly(pBienvenida), Mathf.RoundToInt(17f * S), true);
-
-            if (!Land)
-            {
-                UIKit.Frac(t1.rectTransform, .06f, .39f, .94f, .47f);
-                UIKit.Frac(t2.rectTransform, .08f, .34f, .92f, .40f);
-                UIKit.Frac(R(b), .05f, .08f, .95f, .145f);
-            }
-            else
-            {
-                UIKit.Frac(group, .25f, .34f, .75f, .70f);
-                UIKit.Frac(t1.rectTransform, .08f, .30f, .92f, .39f);
-                UIKit.Frac(t2.rectTransform, .14f, .23f, .86f, .30f);
-                UIKit.Frac(R(b), .34f, .07f, .66f, .17f);
-            }
-            Anim.Flotar(group);
-            UIKit.AddShadow(b.GetComponent<Image>(), 40, 0.18f, -10, 6);
+            // Ilustración del cliente con el saludo, los robots y el título; solo el botón va encima.
+            var arte = LienzoArte(p, recFondoInicio, true);
+            var b = BotonImagen(arte, recComenzar, () => ShowOnly(pBienvenida), "Comenzar");
+            UIKit.Frac(R(b), .12f, .06f, .88f, .14f);
             return p;
+        }
+
+        // Rect con la proporción de una ilustración de pantalla completa, centrado y sin recortarla:
+        // lo que va encima se ubica en fracciones de la ilustración, no de la pantalla.
+        RectTransform LienzoArte(RectTransform parent, Sprite arte, bool conImagen)
+        {
+            var lienzo = UIKit.Node("Arte", parent);
+            UIKit.Stretch(lienzo);
+            var fit = lienzo.gameObject.AddComponent<AspectRatioFitter>();
+            fit.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            fit.aspectRatio = arte != null ? arte.rect.width / arte.rect.height : 1080f / 2296f;
+            if (conImagen)
+            {
+                var im = UIKit.Img(lienzo, arte, "Ilustracion");
+                im.preserveAspect = false;
+                UIKit.Stretch(im.rectTransform);
+            }
+            return lienzo;
+        }
+
+        // Botón hecho con una ilustración del cliente: el texto ya viene en la imagen.
+        Button BotonImagen(Transform parent, Sprite arte, UnityEngine.Events.UnityAction onClick, string nombre)
+        {
+            var im = UIKit.Img(parent, arte, nombre);
+            im.preserveAspect = true;
+            im.raycastTarget = true;
+            var b = im.gameObject.AddComponent<Button>();
+            b.targetGraphic = im;
+            b.transition = Selectable.Transition.None;
+            im.gameObject.AddComponent<PressEffect>();
+            if (onClick != null) b.onClick.AddListener(onClick);
+            return b;
+        }
+
+        // Tarjeta ilustrada a todo el ancho de la columna, con el alto que pide su proporción.
+        Button TarjetaImagen(RectTransform content, Sprite arte, float y, float w, out float h,
+                             UnityEngine.Events.UnityAction onClick, string nombre)
+        {
+            h = arte != null ? w * arte.rect.height / arte.rect.width : w * .45f;
+            var b = BotonImagen(content, arte, onClick, nombre);
+            UIKit.Top(R(b), 0, y, w, h);
+            return b;
+        }
+
+        // Flecha en disco blanco (ilustración del cliente) sobre una tarjeta; no recibe toques,
+        // el toque lo atiende la tarjeta entera.
+        void FlechaTarjeta(Transform card, Sprite flecha, float x, float y, float lado)
+        {
+            if (flecha == null) return;
+            var im = UIKit.Img(card, flecha, "Flecha");
+            im.preserveAspect = true;
+            UIKit.TopLeft(im.rectTransform, x, y, lado, lado);
         }
 
         // ============================================================
@@ -44,111 +78,60 @@ namespace ARDiabetes
         RectTransform BuildBienvenida()
         {
             var p = Panel("2_Bienvenida");
-            const float S = 2.77f;
-            bool land = Land;
-
-            var card = UIKit.Box(p, UIKit.Card, 48, "Card");
-            if (!land) UIKit.Frac(card.rectTransform, 0.04f, 0.20f, 0.96f, 0.97f);
-            else UIKit.Frac(card.rectTransform, 0.07f, 0.26f, 0.93f, 0.84f);
-            UIKit.AddShadow(card, 48, 0.12f, -10, 10);
-
-            var viewport = UIKit.Node("Viewport", card.transform);
-            UIKit.Frac(viewport, 0.04f, 0.14f, 0.96f, 0.97f);
+            // Cada slide es una ilustración completa del cliente (tarjeta con título y texto incluidos).
+            // El carrusel desliza las ilustraciones; puntos y botones van en un lienzo fijo encima.
+            var marco = LienzoArte(p, recBienvenida[0], false);
+            var viewport = UIKit.Node("Viewport", marco);
+            UIKit.Stretch(viewport);
             viewport.gameObject.AddComponent<RectMask2D>();
             var catcher = viewport.gameObject.AddComponent<Image>();
             catcher.color = new Color(1, 1, 1, 0); catcher.raycastTarget = true;
 
-            Canvas.ForceUpdateCanvases();
-            float w = viewport.rect.width, h = viewport.rect.height;
-            if (w < 10) { w = (land ? Screen.height : Screen.width) * 0.8f; h = w; }
-
+            // Content mide 3 viewports de ancho y cada slide un tercio: no depende de que el layout
+            // ya esté calculado al construir (el carrusel mide el ancho real en cada frame).
             var content = UIKit.Node("Content", viewport);
-            content.anchorMin = content.anchorMax = new Vector2(0, 0.5f);
+            content.anchorMin = Vector2.zero; content.anchorMax = new Vector2(3f, 1f);
             content.pivot = new Vector2(0, 0.5f);
-            content.sizeDelta = new Vector2(w * 3, h);
-            content.anchoredPosition = Vector2.zero;
+            content.offsetMin = content.offsetMax = Vector2.zero;
 
-            string[] titles = { "Explora 3 libros", "Escanea y juega", "Aprende a cuidarte" };
-            string[] bodies =
-            {
-                "Descubre tu cuerpo, la alimentación y el cuidado diario con modelos 3D y realidad aumentada.",
-                "Apunta la cámara a las páginas de tus libros para ver increíbles modelos en realidad aumentada.",
-                "Completa juegos, gana estrellas y aprende cada día algo nuevo sobre la diabetes tipo 1."
-            };
-            Sprite[] imgs = { robotCoral, figScan != null ? figScan : spIconScan, robotVerde };
             for (int i = 0; i < 3; i++)
             {
-                var slide = UIKit.Node("Slide" + i, content);
-                slide.anchorMin = slide.anchorMax = new Vector2(0, 0.5f);
-                slide.pivot = new Vector2(0, 0.5f);
-                slide.sizeDelta = new Vector2(w, h);
-                slide.anchoredPosition = new Vector2(i * w, 0);
-
-                var tt = UIKit.Text(slide, titles[i], 78, UIKit.Navy);
-                UIKit.Frac(tt, 0.05f, 0.82f, 0.95f, 0.98f);
-                var bd = UIKit.Text(slide, bodies[i], 44, UIKit.Muted, TextAlignmentOptions.Center, FontStyles.Normal);
-                UIKit.Frac(bd, land ? 0.06f : 0.08f, 0.52f, land ? 0.94f : 0.92f, 0.80f);
-                if (i == 0)
-                {
-                    var trio = BuildRobotGroup(slide);
-                    UIKit.Frac(trio, .08f, .04f, .92f, .52f);
-                }
-                else if (i == 1)
-                {
-                    // El ícono de escanear es blanco: va sobre la caja naranja, como en la tarjeta del Inicio.
-                    float lado = Mathf.Min(w * .36f, h * .30f);
-                    var caja = UIKit.Box(slide, UIKit.Scan, Mathf.RoundToInt(lado * .30f), "ScanIcon");
-                    var crt = caja.rectTransform;
-                    crt.anchorMin = crt.anchorMax = new Vector2(.5f, .27f);
-                    crt.sizeDelta = new Vector2(lado, lado);
-                    crt.anchoredPosition = Vector2.zero;
-                    crt.localRotation = Quaternion.Euler(0, 0, 4f);
-                    UIKit.AddShadow(caja, Mathf.RoundToInt(lado * .30f), .14f, -8f, 8f);
-                    var ic = UIKit.Img(caja.transform, imgs[i], "Img");
-                    ic.color = Color.white; ic.preserveAspect = true; UIKit.Stretch(ic.rectTransform, lado * .17f);
-                }
-                else
-                {
-                    var im = UIKit.Img(slide, imgs[i], "Img"); im.preserveAspect = true;
-                    UIKit.Frac(im, 0.30f, 0.05f, 0.70f, 0.50f);
-                }
+                var slide = UIKit.Img(content, recBienvenida[i], "Slide" + i);
+                slide.preserveAspect = false;
+                UIKit.Frac(slide.rectTransform, i / 3f, 0f, (i + 1) / 3f, 1f);
             }
+            Canvas.ForceUpdateCanvases();
+            float w = viewport.rect.width;
 
+            // Puntos dentro de la tarjeta blanca, cerca de su borde inferior (la tarjeta termina al 22 %).
             var dots = new Image[3];
             for (int i = 0; i < 3; i++)
             {
-                var d = UIKit.Img(card.transform, UIKit.Circle(), "Dot" + i);
+                var d = UIKit.Img(marco, UIKit.Circle(), "Dot" + i);
                 d.preserveAspect = true;
                 d.color = i == 0 ? UIKit.Blue : UIKit.Hex("C4D3E0");
                 float cx = 0.5f + (i - 1) * 0.045f;
-                UIKit.Frac(d, cx - 0.012f, 0.045f, cx + 0.012f, 0.095f);
+                UIKit.Frac(d, cx - 0.012f, 0.245f, cx + 0.012f, 0.262f);
                 dots[i] = d;
             }
 
-            var siguiente = UIKit.Button(p, "SIGUIENTE", UIKit.Blue, Color.white, 40, null, Mathf.RoundToInt(17f * S));
-            var omitir = UIKit.Button(p, "Omitir", new Color(0, 0, 0, 0), UIKit.Muted, 20, () => ShowOnly(pPerfil), Mathf.RoundToInt(16f * S), false);
-            if (!land)
-            {
-                UIKit.Frac(R(siguiente), 0.18f, 0.10f, 0.82f, 0.175f);
-                UIKit.Frac(R(omitir), 0.30f, 0.05f, 0.70f, 0.095f);
-            }
-            else
-            {
-                UIKit.Frac(R(siguiente), 0.34f, 0.10f, 0.66f, 0.19f);
-                UIKit.Frac(R(omitir), 0.40f, 0.03f, 0.60f, 0.09f);
-            }
-            UIKit.AddShadow(siguiente.GetComponent<Image>(), 40, 0.18f, -10, 6);
-            var sigLabel = siguiente.GetComponentInChildren<TMP_Text>();
+            var siguiente = BotonImagen(marco, recSiguiente, null, "Siguiente");
+            UIKit.Frac(R(siguiente), .12f, .105f, .88f, .185f);
+            var omitir = BotonImagen(marco, recOmitir, () => ShowOnly(pPerfil), "Omitir");
+            UIKit.Frac(R(omitir), .12f, .02f, .88f, .10f);
+            var sigImg = siguiente.GetComponent<Image>();
 
             var carousel = viewport.gameObject.AddComponent<Carousel>();
             carousel.content = content;
             carousel.slideWidth = w;
+            carousel.medirViewport = true;
             carousel.count = 3;
             carousel.dots = dots;
             carousel.dotOn = UIKit.Blue;
             carousel.dotOff = UIKit.Hex("C4D3E0");
             carousel.onComplete = () => ShowOnly(pPerfil);
-            carousel.onIndexChanged = idx => { if (sigLabel != null) sigLabel.text = idx == 2 ? "EMPEZAR" : "SIGUIENTE"; };
+            // En la última ilustración el botón pasa a COMENZAR (el texto viene en la imagen).
+            carousel.onIndexChanged = idx => { if (sigImg != null) sigImg.sprite = idx == 2 ? recComenzar : recSiguiente; };
             siguiente.onClick.AddListener(() => carousel.Next());
             return p;
         }
@@ -179,17 +162,22 @@ namespace ARDiabetes
             if (!land) UIKit.Frac(campo, 0.05f, 0.71f, 0.95f, 0.79f);
             else UIKit.Frac(campo, 0.25f, 0.60f, 0.75f, 0.74f);
 
+            // 3 personajes (uno por mundo) en una fila; en la tarjeta va el busto ilustrado.
             var lista = Personajes;
-            int cols = land ? 6 : 3, rows = land ? 1 : 2;
-            float x0 = 0.05f, x1 = 0.95f, y0 = land ? 0.17f : 0.19f, y1 = land ? 0.56f : 0.67f;
-            float gx = land ? 0.015f : 0.03f, gy = 0.025f;
+            int cols = 3, rows = 1;
+            float x0 = land ? 0.20f : 0.05f, x1 = land ? 0.80f : 0.95f;
+            float y0 = land ? 0.17f : 0.44f, y1 = land ? 0.56f : 0.65f;
+            float gx = land ? 0.02f : 0.03f, gy = 0f;
             var marcos = new GameObject[lista.Length];
+            int elegido = PersonajeVigente(AppState.Character);
+            if (elegido != AppState.Character) AppState.Character = elegido;
             for (int i = 0; i < lista.Length; i++)
             {
                 var rc = UIKit.Cell(i, cols, rows, x0, y0, x1, y1, gx, gy);
-                marcos[i] = PersonajeOption(p, rc, lista[i], i, marcos);
+                var busto = bustos != null && i < bustos.Length && bustos[i] != null ? bustos[i] : lista[i];
+                marcos[i] = PersonajeOption(p, rc, busto, i, marcos);
             }
-            for (int i = 0; i < marcos.Length; i++) marcos[i].SetActive(i == AppState.Character);
+            for (int i = 0; i < marcos.Length; i++) marcos[i].SetActive(i == elegido);
 
             var continueButton = UIKit.Button(p, "CONTINUAR", UIKit.Blue, Color.white, Mathf.RoundToInt(17f * S),
                 () => ShowOnly(pMenu), Mathf.RoundToInt(17f * S), true);
@@ -346,36 +334,13 @@ namespace ARDiabetes
             y += heroH + 22f * S;
 
             // ---- Explora ----
-            float featureW = columnW - 40f * S, featureH = 226f * S;
-            var explore = UIKit.Box(content, UIKit.Navy, Mathf.RoundToInt(26f * S), "explore-feature");
-            UIKit.Top(explore.rectTransform, 0, y, featureW, featureH);
-            UIKit.AddShadow(explore, Mathf.RoundToInt(26f * S), .16f, -8f, 8f);
+            // Tarjeta ilustrada del cliente; el botón EXPLORA AHORA va abajo a la izquierda, debajo del texto.
+            float featureW = columnW - 40f * S;
+            var explore = TarjetaImagen(content, recExplorar, y, featureW, out float featureH, () => ShowOnly(pMundos), "explore-feature");
             explore.gameObject.AddComponent<Appear>().delay = .05f;
-            explore.gameObject.AddComponent<Mask>();
-            var exploreDecor = UIKit.Img(explore.transform, UIKit.Circle(), "Decor");
-            exploreDecor.color = new Color(1, 1, 1, .08f); exploreDecor.preserveAspect = true;
-            UIKit.TopLeft(exploreDecor.rectTransform, featureW - 88f * S, featureH - 70f * S, 150f * S, 150f * S);
-            var exploreCircle = UIKit.Img(explore.transform, UIKit.Circle(), "StarDisc");
-            exploreCircle.color = new Color(1, 1, 1, .11f); exploreCircle.preserveAspect = true;
-            UIKit.TopLeft(exploreCircle.rectTransform, featureW - 81f * S, 28f * S, 54f * S, 54f * S);
-            Anim.Deriva(exploreCircle);
-            var exploreStar = UIKit.Img(exploreCircle.transform, figStar, "Star");
-            exploreStar.color = UIKit.Hex("FFB830"); exploreStar.preserveAspect = true; UIKit.Stretch(exploreStar.rectTransform, 12f * S);
-            var kicker = UIKit.Text(explore.transform, "EXPLORA, DESCUBRE Y APRENDE", 12f * S, UIKit.Hex("A9D8FF"), TextAlignmentOptions.Left);
-            kicker.characterSpacing = 10f;
-            UIKit.TopLeft(kicker.rectTransform, 25f * S, 25f * S, 262f * S, 18f * S);
-            var exploreTitle = UIKit.Text(explore.transform, "¡Comienza a explorar!", 26f * S, Color.white, TextAlignmentOptions.Left);
-            UIKit.TopLeft(exploreTitle.rectTransform, 25f * S, 47f * S, featureW - 50f * S, 34f * S);
-            var exploreBody = UIKit.Text(explore.transform, "Viaja por tres mundos y descubre cómo cuidar tu cuerpo cada día.", 16f * S, UIKit.Hex("DCECFF"), TextAlignmentOptions.Left, FontStyles.Normal);
-            UIKit.Interlinea(exploreBody, 1.45f);
-            UIKit.TopLeft(exploreBody.rectTransform, 25f * S, 85f * S, 285f * S, 50f * S);
-            var exploreButton = UIKit.Button(explore.transform, "", Color.white, UIKit.Navy, Mathf.RoundToInt(16f * S), () => ShowOnly(pMundos), 15, true);
-            UIKit.TopLeft(R(exploreButton), 25f * S, 150f * S, 203f * S, 52f * S);
-            var exploreButtonText = UIKit.Text(exploreButton.transform, "EXPLORAR AHORA", 15f * S, UIKit.Navy, TextAlignmentOptions.Left);
-            UIKit.Frac(exploreButtonText, .084f, .12f, .84f, .88f);
-            exploreButtonText.enableWordWrapping = false;
-            var exploreChevron = UIKit.Img(exploreButton.transform, figChevron, "Chevron");
-            exploreChevron.color = UIKit.Navy; exploreChevron.preserveAspect = true; UIKit.Frac(exploreChevron, .80f, .29f, .92f, .71f);
+            float btnW = featureW * .44f, btnH = recExploraAhora != null ? btnW * recExploraAhora.rect.height / recExploraAhora.rect.width : 50f * S;
+            var exploreButton = BotonImagen(explore.transform, recExploraAhora, () => ShowOnly(pMundos), "ExploraAhora");
+            UIKit.TopLeft(R(exploreButton), featureW * .045f, featureH * .67f, btnW, btnH);
             y += featureH + 28f * S;
 
             // ---- Aventuras ----
@@ -383,61 +348,25 @@ namespace ARDiabetes
             UIKit.Top(adventureTitle.rectTransform, 0, y, columnW - 40f * S, 32f * S);
             adventureTitle.gameObject.AddComponent<Appear>().delay = .10f;
             y += 32f * S + 16f * S;
-            string[] adventureNames = { "Mundo Fisiológico", "Mundo Nutricional", "Mundo Clínico" };
-            string[] adventureSubs = { "Descubre cómo funciona tu cuerpo", "Aprende sobre tus alimentos", "Conoce tus cuidados" };
-            Color[] adventureColors = { UIKit.Coral, UIKit.Nutri, UIKit.Clin };
-            Sprite[] adventureRobots = { robotCoral, robotVerde, robotAzul };
             for (int i = 0; i < 3; i++)
             {
-                BuildAdventureCard(content, i, y, columnW - 40f * S, 196f * S, adventureNames[i], adventureSubs[i], adventureColors[i], adventureRobots[i]);
-                y += 196f * S + 18f * S;
+                y += BuildAdventureCard(content, i, y, columnW - 40f * S) + 18f * S;
             }
             y -= 18f * S;
             y += 30f * S;
 
-            // ---- Escanear ----
-            float scanW = columnW - 40f * S, scanH = 222f * S, scanX = 113f * S, scanTextW = scanW - scanX - 20f * S;
-            var scan = UIKit.Box(content, UIKit.Hex("FFF0E6"), Mathf.RoundToInt(25f * S), "scan-feature");
-            UIKit.Top(scan.rectTransform, 0, y, scanW, scanH);
-            UIKit.AddShadow(scan, Mathf.RoundToInt(25f * S), .10f, -6f, 7f);
+            // ---- Escanear y Jugar: tarjetas ilustradas, con la flecha del cliente al borde derecho ----
+            float sideW = columnW - 40f * S;
+            var scan = TarjetaImagen(content, recEscanear, y, sideW, out float scanH, () => OnMenuTile(3, "Escanear página"), "scan-feature");
             scan.gameObject.AddComponent<Appear>().delay = .30f;
-            var scanIconBox = UIKit.Box(scan.transform, UIKit.Scan, Mathf.RoundToInt(22f * S), "ScanIcon");
-            UIKit.TopLeft(scanIconBox.rectTransform, 20f * S, 22f * S, 72f * S, 72f * S);
-            scanIconBox.rectTransform.localRotation = Quaternion.Euler(0, 0, 4f);
-            var scanIcon = UIKit.Img(scanIconBox.transform, figScan, "Icon");
-            scanIcon.color = Color.white; scanIcon.preserveAspect = true; UIKit.Stretch(scanIcon.rectTransform, 12f * S);
-            var scanKicker = UIKit.Text(scan.transform, "REALIDAD AUMENTADA", 12f * S, UIKit.Hex("A35422"), TextAlignmentOptions.Left);
-            scanKicker.characterSpacing = 7.5f;
-            UIKit.TopLeft(scanKicker.rectTransform, scanX, 22f * S, scanTextW, 18f * S);
-            var scanTitle = UIKit.Text(scan.transform, "¡Haz que tu libro cobre vida!", 22f * S, UIKit.Hex("663112"), TextAlignmentOptions.Left);
-            UIKit.Interlinea(scanTitle, 1.15f);
-            UIKit.TopLeft(scanTitle.rectTransform, scanX, 42f * S, scanTextW, 54f * S);
-            var scanBody = UIKit.Text(scan.transform, "Escanea una página y descubre su contenido en 3D.", 15f * S, UIKit.Hex("764726"), TextAlignmentOptions.Left, FontStyles.Normal);
-            UIKit.Interlinea(scanBody, 1.4f);
-            UIKit.TopLeft(scanBody.rectTransform, scanX, 98f * S, scanTextW, 46f * S);
-            var scanButton = UIKit.Button(scan.transform, "ESCANEAR PÁGINA", UIKit.Hex("D65D0D"), Color.white, Mathf.RoundToInt(14f * S), () => OnMenuTile(3, "Escanear página"), Mathf.RoundToInt(14f * S), true);
-            UIKit.TopLeft(R(scanButton), scanX, 153f * S, 165f * S, 47f * S);
+            float lado = scanH * .30f;
+            FlechaTarjeta(scan.transform, recFlechas[3], sideW - lado - sideW * .025f, (scanH - lado) * .5f, lado);
             y += scanH + 20f * S;
 
-            // ---- Jugar ----
-            float playW = columnW - 40f * S, playH = 98f * S;
-            var play = UIKit.Button(content, "", UIKit.Juegos, Color.white, Mathf.RoundToInt(24f * S), () => OnMenuTile(4, "Jugar y aprender"), 19, true);
-            UIKit.Top(R(play), 0, y, playW, playH);
-            UIKit.AddShadow(play.GetComponent<Image>(), Mathf.RoundToInt(24f * S), .16f, -7f, 8f);
+            var play = TarjetaImagen(content, recJuegos, y, sideW, out float playH, () => OnMenuTile(4, "Jugar y aprender"), "play-feature");
             play.gameObject.AddComponent<Appear>().delay = .35f;
-            var playIconBox = UIKit.Box(play.transform, new Color(1, 1, 1, .18f), Mathf.RoundToInt(18f * S), "GameIcon");
-            UIKit.TopLeft(playIconBox.rectTransform, 17f * S, 20f * S, 58f * S, 58f * S);
-            var playIcon = UIKit.Img(playIconBox.transform, figGame, "Icon");
-            playIcon.color = Color.white; playIcon.preserveAspect = true; UIKit.Stretch(playIcon.rectTransform, 10f * S);
-            float playTextW = playW - 87f * S - 59f * S;
-            var playTitle = UIKit.Text(play.transform, "Jugar y aprender", 19f * S, Color.white, TextAlignmentOptions.Left);
-            UIKit.TopLeft(playTitle.rectTransform, 87f * S, 15f * S, playTextW, 28f * S);
-            var playSub = UIKit.Text(play.transform, "Completa misiones y gana estrellas", 14f * S, new Color(1, 1, 1, .90f), TextAlignmentOptions.Left, FontStyles.Normal);
-            UIKit.Interlinea(playSub, 1.35f);
-            UIKit.TopLeft(playSub.rectTransform, 87f * S, 43f * S, playTextW, 42f * S);
-            var playChevron = UIKit.Img(play.transform, figChevron, "Chevron");
-            playChevron.color = Color.white; playChevron.preserveAspect = true;
-            UIKit.TopLeft(playChevron.rectTransform, playW - 47f * S, 36.5f * S, 25f * S, 25f * S);
+            lado = playH * .30f;
+            FlechaTarjeta(play.transform, recFlechas[4], sideW - lado - sideW * .025f, (playH - lado) * .5f, lado);
             y += playH;
 
             content.sizeDelta = new Vector2(columnW, y + 30f * S);
@@ -446,40 +375,17 @@ namespace ARDiabetes
             return p;
         }
 
-        void BuildAdventureCard(RectTransform content, int index, float y, float w, float h,
-                                string title, string description, Color color, Sprite robot)
+        // Tarjeta ilustrada de un mundo (título, texto y robot vienen en la imagen del cliente) con
+        // su flecha de color. Devuelve el alto que ocupó.
+        float BuildAdventureCard(RectTransform content, int index, float y, float w)
         {
-            const float S = 2.77f;
-            var card = UIKit.Button(content, "", color, Color.white, Mathf.RoundToInt(25f * S), () => OnMenuTile(index, title), 20, true);
-            UIKit.Top(R(card), 0, y, w, h);
-            card.gameObject.AddComponent<Mask>();
-            UIKit.AddShadow(card.GetComponent<Image>(), Mathf.RoundToInt(25f * S), .18f, -7f, 8f);
+            string[] nombres = { "Mundo Fisiológico", "Mundo Nutricional", "Mundo Clínico" };
+            var card = TarjetaImagen(content, recMundos[index], y, w, out float h, () => OnMenuTile(index, nombres[index]), "Mundo" + index);
             card.gameObject.AddComponent<Appear>().delay = .15f + .05f * index;
-
-            bool mirrored = index == 1;
-            // Como en Figma: robot que sobresale por abajo; el título de una sola línea
-            // ("Mundo Clínico") sube la descripción.
-            float textoX = (mirrored ? 131f : 24f) * S;
-            int lineas = index == 2 ? 1 : 2;
-            var robotImg = UIKit.Img(card.transform, robot, "Robot");
-            robotImg.preserveAspect = true;
-            UIKit.TopLeft(robotImg.rectTransform, mirrored ? -14f * S : w - 152f * S, 41f * S, 154f * S, 187f * S);
-            UIKit.SombraImagen(robotImg, .18f, 7f * S);
-            var small = UIKit.Text(card.transform, "AVENTURA " + (index + 1), 12f * S, new Color(1, 1, 1, .85f), TextAlignmentOptions.Left);
-            small.characterSpacing = 8f;
-            UIKit.TopLeft(small.rectTransform, textoX, 27f * S, 190f * S, 18f * S);
-            var strong = UIKit.Text(card.transform, title, 23f * S, Color.white, TextAlignmentOptions.Left);
-            UIKit.Interlinea(strong, 1.12f);
-            UIKit.TopLeft(strong.rectTransform, textoX, 51f * S, 190f * S, (lineas * 26f + 3f) * S);
-            var desc = UIKit.Text(card.transform, description, 15f * S, new Color(1, 1, 1, .92f), TextAlignmentOptions.Left, FontStyles.Normal);
-            desc.fontWeight = FontWeight.SemiBold;
-            UIKit.Interlinea(desc, 1.35f);
-            UIKit.TopLeft(desc.rectTransform, textoX, (51f + lineas * 26f + 8f) * S, 170f * S, 44f * S);
-
-            var arrowDisc = UIKit.Box(card.transform, Color.white, Mathf.RoundToInt(22.5f * S), "Arrow");
-            UIKit.TopLeft(arrowDisc.rectTransform, mirrored ? 18f * S : w - 63f * S, 16f * S, 45f * S, 45f * S);
-            var arrow = UIKit.Img(arrowDisc.transform, figChevron, "Chevron");
-            arrow.color = color; arrow.preserveAspect = true; UIKit.Stretch(arrow.rectTransform, 11f * S);
+            // Abajo a la derecha, junto al robot: arriba están la etiqueta y la cabeza del robot.
+            float lado = h * .24f;
+            FlechaTarjeta(card.transform, recFlechas[index], w - lado - w * .025f, h - lado - h * .06f, lado);
+            return h;
         }
 
         void OnMenuTile(int idx, string label)
@@ -522,34 +428,17 @@ namespace ARDiabetes
             scroll.movementType = ScrollRect.MovementType.Elastic; scroll.inertia = true;
             scroll.scrollSensitivity = 3f * S;
 
-            float introH = 250f * S, introW = columnW - 40f * S, introX = 156f * S, introTextW = introW - introX - 18f * S;
-            var intro = UIKit.Box(content, UIKit.Hex("DFF2FF"), Mathf.RoundToInt(28f * S), "WorldsIntro");
+            // Intro ilustrada del cliente («¿A dónde iremos hoy?»), solo decorativa.
+            float introW = columnW - 40f * S;
+            float introH = recIntroMundos != null ? introW * recIntroMundos.rect.height / recIntroMundos.rect.width : 250f * S;
+            var intro = UIKit.Img(content, recIntroMundos, "WorldsIntro");
             UIKit.Top(intro.rectTransform, 0, y, introW, introH);
-            intro.gameObject.AddComponent<Mask>();
             intro.gameObject.AddComponent<Appear>().delay = .05f;
-            var introRobots = BuildRobotGroup(intro.transform);
-            UIKit.TopLeft(introRobots, 18f * S, 80f * S, 122f * S, 90f * S);
-            var kicker = UIKit.Text(intro.transform, "TRES MUNDOS POR DESCUBRIR", 11f * S, UIKit.Blue, TextAlignmentOptions.Left);
-            kicker.characterSpacing = 7f;
-            UIKit.Interlinea(kicker, 2f);
-            UIKit.TopLeft(kicker.rectTransform, introX, 46f * S, introTextW, 46f * S);
-            var introTitle = UIKit.Text(intro.transform, "¿A dónde iremos hoy?", 27f * S, UIKit.Navy, TextAlignmentOptions.Left);
-            UIKit.Interlinea(introTitle, 1.12f);
-            UIKit.TopLeft(introTitle.rectTransform, introX, 96f * S, introTextW, 64f * S);
-            var introBody = UIKit.Text(intro.transform, "Cada aventura guarda algo nuevo para aprender.", 15f * S, UIKit.Hex("536E8B"), TextAlignmentOptions.Left, FontStyles.Normal);
-            UIKit.Interlinea(introBody, 1.4f);
-            UIKit.TopLeft(introBody.rectTransform, introX, 162f * S, introTextW, 46f * S);
             y += introH + 20f * S;
 
-            string[] names = { "Mundo Fisiológico", "Mundo Nutricional", "Mundo Clínico" };
-            string[] descriptions = { "Descubre cómo funciona tu cuerpo", "Aprende sobre tus alimentos", "Conoce tus cuidados" };
-            Color[] colors = { UIKit.Coral, UIKit.Nutri, UIKit.Clin };
-            Sprite[] robots = { robotCoral, robotVerde, robotAzul };
             for (int i = 0; i < 3; i++)
             {
-                BuildAdventureCard(content, i, y, columnW - 40f * S, 196f * S,
-                    names[i], descriptions[i], colors[i], robots[i]);
-                y += 196f * S + 18f * S;
+                y += BuildAdventureCard(content, i, y, columnW - 40f * S) + 18f * S;
             }
             content.sizeDelta = new Vector2(columnW, y + 10f * S);
             BuildBottomNav(p, 0);

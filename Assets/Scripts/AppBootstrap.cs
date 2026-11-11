@@ -45,11 +45,20 @@ namespace ARDiabetes
         public Sprite spIconFisio, spIconNutri, spIconClinico, spIconScan, spIconJuegos, spIconProgreso;
         public Sprite spStar;
         public Sprite robotCoral, robotVerde, robotAzul, robotMorado, robotNaranja, robotRosa;
+        [Header("Ilustraciones del cliente (Imagenes/Diseño/Recursos)")]
+        public Sprite[] bustos; // verde, azul, coral: mismo orden que Personajes
+        public Sprite recFondoInicio, recComenzar, recSiguiente, recOmitir;
+        public Sprite[] recBienvenida;
+        public Sprite recExplorar, recExploraAhora, recIntroMundos, recEscanear, recJuegos;
+        public Sprite[] recMundos;  // fisiológico, nutricional, clínico
+        public Sprite[] recFlechas; // coral, verde, azul, naranja, rosa
         public Sprite figScan, figGame, figChevron, figStar, figBack, figBook, figPlay;
         public Sprite figInfo, figWarning, figSpeaker, figPause, figStop;
         public Sprite figHome, figChart, figSettings, figHelp;
         public Sprite spPancreas;
         public GameObject pancreasModel, platoModel, glucoModel;
+        public GameObject[] nutriModelos; // un modelo animado por tema del libro Nutricional
+        public Texture2D[] nutriPaletas;  // paleta de color de cada uno (mismo orden)
         public TMP_FontAsset font;
 
         [Header("Iconos UI")]
@@ -122,12 +131,15 @@ namespace ARDiabetes
         bool Land => !PreviewVertical && Screen.width > Screen.height;
         static RectTransform R(Component c) => (RectTransform)c.transform;
 
-        Sprite[] Personajes => new[] { robotVerde, robotAzul, robotCoral, robotMorado, robotNaranja, robotRosa };
+        Sprite[] Personajes => new[] { robotVerde, robotAzul, robotCoral };
+
+        // Antes había 6 personajes (verde, azul, coral, morado, naranja, rosa); los 3 que se fueron
+        // pasan al más parecido de los que quedan.
+        static int PersonajeVigente(int i) => i == 3 ? 1 : i == 4 || i == 5 ? 2 : Mathf.Clamp(i, 0, 2);
 
         Sprite PersonajeElegido()
         {
-            var lista = Personajes;
-            var elegido = lista[Mathf.Clamp(AppState.Character, 0, lista.Length - 1)];
+            var elegido = Personajes[PersonajeVigente(AppState.Character)];
             return elegido != null ? elegido : robotVerde;
         }
 
@@ -194,10 +206,10 @@ namespace ARDiabetes
                     var m = books[b].Markers[i];
                     if (m == null) continue;
                     string title = i < books[b].TopicTitle.Length ? books[b].TopicTitle[i] : books[b].Title;
-                    scanEntries.Add(new MarkerEntry { Marker = m, Model = books[b].Model, Tint = books[b].ModelTint, Title = title, Book = b, Topic = i });
+                    scanEntries.Add(new MarkerEntry { Marker = m, Model = books[b].ModelFor(i), Paleta = books[b].PaletaFor(i), Tint = books[b].ModelTint, Title = title, Book = b, Topic = i });
                 }
             }
-            if (includesAr)
+            if (includesAr && !EnDemo) // en la demo de escritorio se usa el visor 3D
             {
                 arController = ARController.CreateMulti(scanEntries.ToArray());
                 if (arController != null)
@@ -238,6 +250,7 @@ namespace ARDiabetes
             BuildAll();
             if (pendingStartMsgs != null && pendingStartMsgs.Count > 0)
                 ShowReward(string.Join("\n", pendingStartMsgs));
+            IniciarDemoSiCorresponde();
             if (Environment.GetEnvironmentVariable("ARCAP") == "1" && !captureStarted)
             {
                 captureStarted = true;

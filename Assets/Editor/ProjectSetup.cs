@@ -54,13 +54,29 @@ public static class ProjectSetup
         boot.spIconJuegos  = L("Assets/Imagenes/Diseño/Botones/Icon_juegos 1.png");
         boot.spIconProgreso= L("Assets/Imagenes/UI/ic_chart.png"); // barras (reemplaza la llamita)
         boot.spStar        = L("Assets/Imagenes/Diseño/Botones/Icon_Estrella.png");
-        boot.robotCoral    = L("Assets/Imagenes/Diseño/Robots/Robot_coral.png");
-        boot.robotVerde    = L("Assets/Imagenes/Diseño/Robots/Robot_verde.png");
-        boot.robotAzul     = L("Assets/Imagenes/Diseño/Robots/Robot_azul.png");
+        // Robots ilustrados del cliente (Recursos/): solo hay 3 personajes, uno por mundo.
+        const string Rec = "Assets/Imagenes/Diseño/Recursos/";
+        boot.robotCoral    = L(Rec + "Robot2_Coral.png");
+        boot.robotVerde    = L(Rec + "Robot2_Verde.png");
+        boot.robotAzul     = L(Rec + "Robot2_Azul.png");
         boot.spPancreasPersonaje = L("Assets/Imagenes/Diseño/Personajes/Pancreas_personaje.png");
-        boot.robotMorado   = L("Assets/Imagenes/Diseño/Robots/Robot_morado.png");
-        boot.robotNaranja  = L("Assets/Imagenes/Diseño/Robots/Robot_naranja.png");
-        boot.robotRosa     = L("Assets/Imagenes/Diseño/Robots/Robot_rosa.png");
+        // Los usos decorativos de los colores que ya no existen toman uno de los 3 nuevos.
+        boot.robotMorado   = boot.robotAzul;
+        boot.robotNaranja  = boot.robotVerde;
+        boot.robotRosa     = boot.robotCoral;
+        boot.bustos        = new[] { L(Rec + "Busto_Verde.png"), L(Rec + "Busto_Azul.png"), L(Rec + "Busto_Coral.png") };
+        boot.recFondoInicio = L(Rec + "Fondo_Inicio.png");
+        boot.recBienvenida = new[] { L(Rec + "Fondo_Bienvenida1.png"), L(Rec + "Fondo_Bienvenida2.png"), L(Rec + "Fondo_Bienvenida3.png") };
+        boot.recComenzar   = L(Rec + "Btn_Comenzar.png");
+        boot.recSiguiente  = L(Rec + "Btn_Siguiente.png");
+        boot.recOmitir     = L(Rec + "Btn_Omitir.png");
+        boot.recExplorar   = L(Rec + "Tarjeta_Explorar.png");
+        boot.recExploraAhora = L(Rec + "Btn_ExploraAhora.png");
+        boot.recMundos     = new[] { L(Rec + "Tarjeta_Fisiologico.png"), L(Rec + "Tarjeta_Nutricional.png"), L(Rec + "Tarjeta_Clinico.png") };
+        boot.recIntroMundos = L(Rec + "Tarjeta_Mundos.png");
+        boot.recEscanear   = L(Rec + "Tarjeta_Escanear.png");
+        boot.recJuegos     = L(Rec + "Tarjeta_Juegos.png");
+        boot.recFlechas    = new[] { L(Rec + "Flecha_Coral.png"), L(Rec + "Flecha_Verde.png"), L(Rec + "Flecha_Azul.png"), L(Rec + "Flecha_Naranja.png"), L(Rec + "Flecha_Rosa.png") };
         boot.figCamera     = L("Assets/Imagenes/UI/Figma/ic_fig_camera.png");
         boot.figCheck      = L("Assets/Imagenes/UI/Figma/ic_fig_check.png");
         boot.figX          = L("Assets/Imagenes/UI/Figma/ic_fig_x.png");
@@ -84,7 +100,21 @@ public static class ProjectSetup
         boot.figHelp       = L("Assets/Imagenes/UI/Figma/ic_fig_help.png");
         boot.spPancreas    = L("Assets/Imagenes/Diseño/Icon_Pancreas.png");
         boot.pancreasModel = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Imagenes/QR/Pancreas.fbx");
-        boot.platoModel    = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Imagenes/QR/Plato.fbx");
+        // Libro Nutricional: modelos animados del cliente, uno por tema (el 4.º tema usa el plato).
+        boot.platoModel    = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Imagenes/QR/Nutri_Plato.fbx");
+        boot.nutriModelos  = new[]
+        {
+            boot.platoModel,
+            AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Imagenes/QR/Nutri_Carbohidratos.fbx"),
+            AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Imagenes/QR/Nutri_Equipo.fbx"),
+            boot.platoModel,
+        };
+        foreach (var m in boot.nutriModelos) if (m == null) Debug.LogWarning("[ProjectSetup] Falta un modelo Nutri_*.fbx");
+        // Paletas de color de esos modelos (Unity no extrae las texturas embebidas del FBX).
+        Texture2D Paleta(string n) => AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Imagenes/QR/Texturas/" + n + ".png");
+        var paletaPlato = Paleta("El_Plato_Colores");
+        boot.nutriPaletas = new[] { paletaPlato, Paleta("Carbohidratos_Colores"), Paleta("Equipo_Colores"), paletaPlato };
+        foreach (var t in boot.nutriPaletas) if (t == null) Debug.LogWarning("[ProjectSetup] Falta una paleta en Imagenes/QR/Texturas");
         boot.glucoModel    = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Imagenes/QR/Gluco.fbx");
         if (boot.pancreasModel == null) Debug.LogWarning("[ProjectSetup] Pancreas.fbx no encontrado");
         if (boot.platoModel == null) Debug.LogWarning("[ProjectSetup] Plato.fbx no encontrado");
@@ -345,12 +375,16 @@ public static class ProjectSetup
         foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { folder }))
         {
             var path = AssetDatabase.GUIDToAssetPath(guid);
+            if (path.Contains("/QR/Texturas/")) continue; // paletas de modelos 3D, no sprites
             var ti = AssetImporter.GetAtPath(path) as TextureImporter;
             if (ti == null) continue;
-            if (ti.textureType != TextureImporterType.Sprite || ti.spriteImportMode != SpriteImportMode.Single)
+            // Las ilustraciones del cliente (Recursos/) miden más de 2048 de alto: sin esto se verían borrosas.
+            int maximo = path.Contains("/Recursos/") ? 4096 : ti.maxTextureSize;
+            if (ti.textureType != TextureImporterType.Sprite || ti.spriteImportMode != SpriteImportMode.Single || ti.maxTextureSize != maximo)
             {
                 ti.textureType = TextureImporterType.Sprite;
                 ti.spriteImportMode = SpriteImportMode.Single;
+                ti.maxTextureSize = maximo;
                 ti.SaveAndReimport();
             }
         }

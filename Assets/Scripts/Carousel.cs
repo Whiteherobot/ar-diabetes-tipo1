@@ -17,6 +17,7 @@ namespace ARDiabetes
         public Color dotOn = Color.white, dotOff = Color.gray;
         public System.Action onComplete;
         public System.Action<int> onIndexChanged;
+        public bool medirViewport; // toma slideWidth del ancho de este objeto (el viewport)
 
         int index;
         float targetX;
@@ -34,6 +35,17 @@ namespace ARDiabetes
 
         void Update()
         {
+            // Con slides anclados en fracciones, el ancho real recién se conoce tras el layout.
+            if (medirViewport)
+            {
+                float ancho = ((RectTransform)transform).rect.width;
+                if (ancho > 1f && !Mathf.Approximately(ancho, slideWidth))
+                {
+                    slideWidth = ancho;
+                    targetX = -index * slideWidth;
+                    if (!dragging) content.anchoredPosition = new Vector2(targetX, content.anchoredPosition.y);
+                }
+            }
             if (!dragging)
             {
                 float x = Mathf.Lerp(content.anchoredPosition.x, targetX, Time.unscaledDeltaTime * 12f);
