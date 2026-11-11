@@ -30,13 +30,85 @@ namespace ARDiabetes
             return mv;
         }
 
-        void Build(GameObject prefab, Color tint)
+        /// <summary>
+        /// Material Standard (Built-in; los materiales URP del prototipo se verían rosados).
+        /// Sin paleta, todo el modelo se tiñe del color del libro. Con paleta (los modelos animados
+        /// del cliente: cada pieza toma su color por UV de una textura de colores), se usa esa
+        /// textura sin teñir.
+        /// </summary>
+        public static void AplicarMateriales(GameObject model, Color tint, float brillo, Texture paleta = null)
         {
-            var holderGo = new GameObject("Holder");
-            holderGo.transform.SetParent(transform, false);
-            holder = holderGo.transform;
+            var sh = Shader.Find("Standard");
+            if (sh == null) return;
+            var mat = paleta != null ? new Material(sh) { color = Color.white, mainTexture = paleta }
+                                     : new Material(sh) { color = tint };
+            mat.SetFloat("_Glossiness", brillo);
+            foreach (var r in model.GetComponentsInChildren<Renderer>())
+            {
+                var mats = new Material[r.sharedMaterials.Length];
+                for (int i = 0; i < mats.Length; i++) mats[i] = mat;
+                r.sharedMaterials = mats;
+            }
+        }
+
+        /// <summary>
+        /// Caja que ocupa el modelo. En los animados la pose de reposo del FBX no se parece a lo
+        /// que se ve (piezas que aparecen, caen o se escalan), así que se junta la caja de varios
+        /// momentos del clip y se vuelve al inicio.
+        /// </summary>
+        public static bool Limites(GameObject model, out Bounds b)
+        {
+            b = default;
+            var rends = model.GetComponentsInChildren<Renderer>();
+            if (rends.Length == 0) return false;
+            var anim = model.GetComponentInChildren<Animation>();
+            var clip = anim != null ? anim.clip : null;
+            bool hay = false;
+            int muestras = clip != null ? 8 : 1;
+            for (int i = 0; i < muestras; i++)
+            {
+                if (clip != null) clip.SampleAnimation(anim.gameObject, clip.length * i / muestras);
+                foreach (var r in rends)
+                {
+                    if (!r.enabled || r.bounds.size == Vector3.zero) continue;
+                    if (!hay) { b = r.bounds; hay = true; } else b.Encapsulate(r.bounds);
+                }
+            }
+            if (clip != null) clip.SampleAnimation(anim.gameObject, 0f);
+            return hay;
+        }
+
+        /// <summary>Reproduce en bucle el clip Legacy del modelo, si trae uno.</summary>
+        public static void IniciarAnimacion(GameObject model)
+        {
+            var anim = model.GetComponentInChildren<Animation>();
+            if (anim == null || anim.clip == null) return;
+            anim.cullingType = AnimationCullingType.AlwaysAnimate;
+            anim.wrapMode = WrapMode.Loop;
+            anim.Play(anim.clip.name);
+        }
+
+        GameObject prefabActual, modelo;
+        Texture paletaActual;
+
+        /// <summary>Cambia el modelo del visor (p. ej. al tema elegido); no hace nada si ya es ese.</summary>
+        public void MostrarModelo(GameObject prefab, Color tint, Texture paleta = null)
+        {
+            if (prefab == null || holder == null || (prefab == prefabActual && paleta == paletaActual)) return;
+            ColocarModelo(prefab, tint, paleta);
+        }
+
+        void ColocarModelo(GameObject prefab, Color tint, Texture paleta = null)
+        {
+            if (modelo != null) Destroy(modelo);
+            prefabActual = prefab;
+            paletaActual = paleta;
+            var rotacion = holder.localRotation;
+            holder.localRotation = Quaternion.identity;
+            holder.localScale = Vector3.one;
 
             GameObject model = prefab != null ? Instantiate(prefab) : GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            modelo = model;
             model.transform.SetParent(holder, false);
             model.transform.localPosition = Vector3.zero;
             model.transform.localRotation = Quaternion.identity;
@@ -44,30 +116,26 @@ namespace ARDiabetes
             SetLayer(model, Layer);
             StripEmbeddedCamerasAndLights(model);
 
-            // Material visible en Built-in (los materiales URP del prototipo se verían rosados).
-            var sh = Shader.Find("Standard");
-            if (sh != null)
-            {
-                var mat = new Material(sh) { color = tint };
-                mat.SetFloat("_Glossiness", 0.25f);
-                foreach (var r in model.GetComponentsInChildren<Renderer>())
-                {
-                    var mats = new Material[r.sharedMaterials.Length];
-                    for (int i = 0; i < mats.Length; i++) mats[i] = mat;
-                    r.sharedMaterials = mats;
-                }
-            }
+            AplicarMateriales(model, tint, 0.25f, paleta);
 
             // Auto-encuadre: centrar y escalar a ~2 unidades (uniforme, ya con localScale=1 arriba).
-            var rends = model.GetComponentsInChildren<Renderer>();
-            if (rends.Length > 0)
+            if (Limites(model, out var b))
             {
-                Bounds b = rends[0].bounds;
-                foreach (var r in rends) b.Encapsulate(r.bounds);
                 model.transform.position += holder.position - b.center;
                 float size = Mathf.Max(b.size.x, b.size.y, b.size.z);
                 if (size > 0.0001f) holder.localScale = Vector3.one * (2f / size);
             }
+            IniciarAnimacion(model);
+            holder.localRotation = rotacion;
+        }
+
+        void Build(GameObject prefab, Color tint)
+        {
+            var holderGo = new GameObject("Holder");
+            holderGo.transform.SetParent(transform, false);
+            holder = holderGo.transform;
+
+            ColocarModelo(prefab, tint);
 
             spinner = holderGo.AddComponent<Spinner>();
 

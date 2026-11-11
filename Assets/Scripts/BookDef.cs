@@ -9,7 +9,17 @@ namespace ARDiabetes
         public Color Accent;
         public Sprite HeroIcon;
         public GameObject Model;
+        public GameObject[] TopicModel;   // opcional: modelo propio por tema; si falta, se usa Model
+        public Texture2D[] TopicPaleta;   // paleta de color del modelo de cada tema (null = teñir con ModelTint)
         public Color ModelTint;
+
+        bool TieneTema(int topic) =>
+            TopicModel != null && topic >= 0 && topic < TopicModel.Length && TopicModel[topic] != null;
+
+        public GameObject ModelFor(int topic) => TieneTema(topic) ? TopicModel[topic] : Model;
+
+        public Texture2D PaletaFor(int topic) =>
+            TieneTema(topic) && TopicPaleta != null && topic < TopicPaleta.Length ? TopicPaleta[topic] : null;
         public string[] TopicTitle;
         public string[] TopicSub;
         public Sprite[] TopicIcon;

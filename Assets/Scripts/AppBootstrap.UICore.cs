@@ -337,6 +337,8 @@ namespace ARDiabetes
                 {
                     currentBook = book;
                     modelViewer = book >= 0 && book < modelViewers.Length ? modelViewers[book] : null;
+                    // Libros con un modelo por tema (Nutricional): el visor muestra el del tema actual.
+                    modelViewer?.MostrarModelo(books[book].ModelFor(currentTopic), books[book].ModelTint, books[book].PaletaFor(currentTopic));
                     var names = new List<string>();
                     if (books[book].Markers != null)
                         foreach (var m in books[book].Markers) if (m != null) names.Add(m.name);
@@ -351,6 +353,7 @@ namespace ARDiabetes
                     currentArInfoText = "Apunta la cámara a cualquier página de los libros para ver su modelo 3D.";
                 }
                 arController?.Activate(); // null en el preview del editor
+                if (EnDemo && isBookAr) { ARStateChanged(false); MostrarBuscando(false); }
             }
             else
             {

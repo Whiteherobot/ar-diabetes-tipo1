@@ -56,7 +56,7 @@ namespace ARDiabetes
             books[1] = new BookDef
             {
                 Title = "Libro Nutricional", Accent = UIKit.Nutri, HeroIcon = spIconNutri,
-                Model = platoModel, ModelTint = UIKit.Hex("7CB86F"),
+                Model = platoModel, TopicModel = nutriModelos, TopicPaleta = nutriPaletas, ModelTint = UIKit.Hex("7CB86F"),
                 TopicTitle = new[] { "Plato saludable", "Carbohidratos", "Alimentos recomendados", "Hábitos saludables" },
                 TopicSub = new[] { "Equilibra tu comida", "La energía más rápida", "Elige mejor", "Cuídate cada día" },
                 DescKids = new[]

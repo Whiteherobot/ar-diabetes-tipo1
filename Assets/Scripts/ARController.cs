@@ -15,6 +15,7 @@ namespace ARDiabetes
     {
         public Texture2D Marker;
         public GameObject Model;
+        public Texture2D Paleta; // si el modelo trae paleta de color, no se tiñe
         public Color Tint;
         public string Title;
         public int Book = -1, Topic = -1; // para avisar qué tema fue escaneado (progreso/estrellas)
@@ -263,27 +264,15 @@ namespace ARDiabetes
                 userYaw = 0f;
                 userScale = 1f;
                 ModelViewer.StripEmbeddedCamerasAndLights(spawned); // el FBX trae cámara/luz incrustada
-                var sh = Shader.Find("Standard");
-                if (sh != null)
+                // Brillo 0.35: un especular que se mueve al girar hace mucho más notorio el giro.
+                ModelViewer.AplicarMateriales(spawned, entry.Tint, 0.35f, entry.Paleta);
+                // Auto-escala a ~9 cm sobre el marcador (en los animados, con la caja de todo el clip)
+                if (ModelViewer.Limites(spawned, out var b))
                 {
-                    var mat = new Material(sh) { color = entry.Tint };
-                    mat.SetFloat("_Glossiness", 0.35f); // un brillo especular que se mueve al girar hace mucho más notorio el giro
-                    foreach (var r in spawned.GetComponentsInChildren<Renderer>())
-                    {
-                        var mats = new Material[r.sharedMaterials.Length];
-                        for (int i = 0; i < mats.Length; i++) mats[i] = mat;
-                        r.sharedMaterials = mats;
-                    }
-                }
-                // Auto-escala a ~9 cm sobre el marcador
-                var rends = spawned.GetComponentsInChildren<Renderer>();
-                if (rends.Length > 0)
-                {
-                    Bounds b = rends[0].bounds;
-                    foreach (var r in rends) b.Encapsulate(r.bounds);
                     float size = Mathf.Max(b.size.x, b.size.y, b.size.z);
                     if (size > 0.0001f) spawned.transform.localScale *= 0.09f / size;
                 }
+                ModelViewer.IniciarAnimacion(spawned);
                 spawnedMarkerName = name;
                 if (entry.Title != null) OnMarkerTitle?.Invoke(entry.Title);
                 if (entry.Book >= 0 && entry.Topic >= 0) OnMarkerSeen?.Invoke(entry.Book, entry.Topic);
