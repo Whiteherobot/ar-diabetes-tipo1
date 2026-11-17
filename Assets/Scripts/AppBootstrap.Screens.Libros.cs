@@ -192,9 +192,22 @@ namespace ARDiabetes
             refs.Content = content; refs.Learn = learn.rectTransform; refs.LearnShadow = learnShadow.rectTransform;
             refs.Coach = coach; refs.Interact = interact.rectTransform; refs.InteractShadow = interactShadow.rectTransform;
             refs.AnchoColumna = columnW;
-            title.text = b.TopicTitle[0]; desc.text = b.Desc(0);
+            refs.ImgPorDefecto = img.sprite;
+            title.text = b.TopicTitle[0]; desc.text = b.DescDetalle(0);
+            PonerIlustracion(refs, b, 0);
             AcomodarDetalle(refs);
             return p;
+        }
+
+        // Bloque DESCUBRE: la ilustración del cliente del tema (cuadrada, más grande) o la de siempre.
+        void PonerIlustracion(DetalleRefs r, BookDef b, int topic)
+        {
+            const float S = 2.77f;
+            var ilus = b.IlustracionFor(topic);
+            float w = r.Band.rectTransform.sizeDelta.x;
+            r.Img.sprite = ilus != null ? ilus : r.ImgPorDefecto;
+            if (ilus != null) UIKit.TopLeft(r.Img.rectTransform, (w - 225f * S) / 2f, 48f * S, 225f * S, 225f * S);
+            else UIKit.TopLeft(r.Img.rectTransform, (w - 230f * S) / 2f, 55f * S, 230f * S, 180f * S);
         }
 
         // El alto de "Aprende" depende del texto del tema, y "Interactúa" va debajo.
@@ -225,7 +238,8 @@ namespace ARDiabetes
             if (refs == null) return;
             var b = books[currentBook];
             refs.Title.text = b.TopicTitle[currentTopic];
-            refs.Desc.text = b.Desc(currentTopic);
+            refs.Desc.text = b.DescDetalle(currentTopic);
+            PonerIlustracion(refs, b, currentTopic);
             AcomodarDetalle(refs);
             refs.Band.color = b.Accent;
             detTitle = refs.Title; detDesc = refs.Desc; detBand = refs.Band; detImg = refs.Img;

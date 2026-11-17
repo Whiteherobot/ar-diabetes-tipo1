@@ -16,32 +16,43 @@ namespace ARDiabetes
             books[0] = new BookDef
             {
                 Title = "Libro Fisiológico", Accent = UIKit.Coral, HeroIcon = spPancreas,
-                Model = pancreasModel, ModelTint = UIKit.Hex("DD5450"),
-                TopicTitle = new[] { "¿Qué es la diabetes tipo 1?", "El páncreas", "Insulina y glucosa", "Cómo funciona" },
-                TopicSub = new[] { "Conoce la enfermedad", "El órgano de la insulina", "Cómo obtienes energía", "Todo trabaja en equipo" },
+                // Modelos animados del cliente: sistema inmunitario (tema 1), insulina y la célula (tema 3)
+                // y glucagón (tema 4); el páncreas (tema 2) sigue con su modelo.
+                Model = pancreasModel, TopicModel = fisioModelos, ModelTint = UIKit.Hex("DD5450"),
+                TopicTitle = new[] { "¿Qué es la diabetes tipo 1?", "El páncreas", "Insulina y glucosa", "El mensaje del glucagón" },
+                TopicSub = new[] { "Conoce la enfermedad", "El órgano de la insulina", "Cómo obtienes energía", "El hígado y su reserva" },
                 DescKids = new[]
                 {
                     "Tu cuerpo tiene un ayudante llamado insulina. En la diabetes tipo 1, ese ayudante casi no aparece. ¡Vamos a conocerlo juntos!",
                     "El páncreas es un amigo escondido en tu barriga. Fabrica la insulina. ¡Míralo en 3D!",
                     "La insulina es como una llave mágica. Abre la puerta de tus células para que entre la energía (glucosa).",
-                    "El páncreas, la insulina y la glucosa trabajan en equipo, como superhéroes, para darte energía todos los días."
+                    "Cuando pasas un rato sin comer, el glucagón le manda un mensaje al hígado para que saque la energía que tiene guardada."
                 },
                 DescPre = new[]
                 {
                     "La diabetes tipo 1 aparece cuando el cuerpo casi no produce insulina, la hormona que nos da energía. ¡Aprende a conocerla y cuidarte!",
                     "El páncreas es el órgano que fabrica la insulina en tu cuerpo. Explóralo en 3D y descubre cómo es por dentro.",
                     "La insulina es como una llave que deja entrar la glucosa (energía) a tus células para que funcionen.",
-                    "Descubre cómo trabajan juntos el páncreas, la insulina y la glucosa para darte energía cada día."
+                    "Cuando pasas un tiempo sin comer, el glucagón le avisa al hígado que libere la glucosa que tiene guardada. Así tu cuerpo mantiene su energía."
                 },
                 DescTeens = new[]
                 {
                     "La diabetes tipo 1 es una enfermedad autoinmune: el sistema de defensas del cuerpo ataca por error las células del páncreas que producen insulina, la hormona clave para usar la glucosa como energía.",
                     "El páncreas es una glándula mixta: sus células beta, en los islotes de Langerhans, producen insulina, la hormona que regula tu glucosa en sangre.",
                     "La insulina actúa como una llave molecular: se une a receptores en la membrana celular y permite el transporte de glucosa al interior para producir energía.",
-                    "El eje páncreas-insulina-glucosa regula tu metabolismo energético: sin suficiente insulina, la glucosa se acumula en la sangre en vez de entrar en las células."
+                    "En ayuno, las células alfa del páncreas liberan glucagón, que estimula al hígado a convertir glucógeno en glucosa (glucogenólisis) y liberarla a la sangre, regulando la glucemia junto con la insulina."
+                },
+                // Ilustraciones y textos del cliente (Recursos_LibroFisiologico, Información_temas.pdf).
+                TopicIlustracion = fisioIlustraciones,
+                TopicDescubre = new[]
+                {
+                    "Dentro del páncreas viven unas pequeñas células llamadas células beta. Su trabajo es producir insulina, que aquí vemos representada como una llave.\n\nNuestro cuerpo también tiene un equipo de defensa llamado sistema inmunitario. Su trabajo es ayudarnos a protegernos. Pero, en la diabetes tipo 1, este equipo se confunde y ataca por error a las células beta.\n\nCon el paso del tiempo, algunas células beta dejan de funcionar y se van perdiendo. Por eso, el páncreas produce menos insulina. Esto no ocurrió por algo que hiciste. La diabetes tipo 1 no es tu culpa.",
+                    null,
+                    "La glucosa viaja por la sangre hasta los músculos. La insulina también viaja por la sangre y ayuda a que la glucosa entre en las células musculares.\n\nCuando la insulina llega a una célula muscular, se une a su receptor, como si tocara un timbre. El receptor envía una señal al interior de la célula. Esa señal ayuda a preparar las pequeñas puertas GLUT4, por donde puede entrar la glucosa.\n\n¡Ahora los cubitos de glucosa entran uno por uno! Con ayuda de la mitocondria, la célula aprovecha la glucosa para producir ATP, una molécula que le permite usar energía para realizar sus tareas.",
+                    "Cuando pasa un tiempo sin comer, la cantidad de glucosa en la sangre comienza a disminuir. Entonces, las células alfa del páncreas liberan una hormona llamada glucagón. El glucagón viaja por la sangre hasta llegar al hígado y le envía un mensaje.\n\nEl hígado guarda una reserva llamada glucógeno. Al recibir el mensaje, transforma parte de esa reserva en glucosa. Después, libera la glucosa a la sangre para que pueda llegar a otras partes del cuerpo. Así, el glucagón y el hígado ayudan a regular la cantidad de glucosa en la sangre."
                 },
                 TopicIcon = new[] { figTemas[0], figTemas[1], figTemas[2], figTemas[3] },
-                Markers = markersFisio,
+                Markers = markersFisio, MarkersExtra = markersFisioExtra,
                 Narration = new[] { N(0), N(1), N(2), N(3) },
                 Quiz = new[]
                 {

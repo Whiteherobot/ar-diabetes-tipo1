@@ -115,6 +115,16 @@ public static class ProjectSetup
         var paletaPlato = Paleta("El_Plato_Colores");
         boot.nutriPaletas = new[] { paletaPlato, Paleta("Carbohidratos_Colores"), Paleta("Equipo_Colores"), paletaPlato };
         foreach (var t in boot.nutriPaletas) if (t == null) Debug.LogWarning("[ProjectSetup] Falta una paleta en Imagenes/QR/Texturas");
+        // Libro Fisiológico: modelos animados del cliente (tema 2, el páncreas, sigue con Pancreas.fbx).
+        GameObject Fisio(string n)
+        {
+            var m = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Imagenes/QR/Fisio_" + n + ".fbx");
+            if (m == null) Debug.LogWarning("[ProjectSetup] Falta Fisio_" + n + ".fbx");
+            return m;
+        }
+        boot.fisioModelos = new[] { Fisio("Inmunitario"), null, Fisio("InsulinaCelula"), Fisio("Glucagon") };
+        const string Desc = "Assets/Imagenes/Diseño/Recursos/Descubre/";
+        boot.fisioIlustraciones = new[] { L(Desc + "Fisio_Inmunitario.png"), null, L(Desc + "Fisio_InsulinaCelula.png"), L(Desc + "Fisio_Glucagon.png") };
         boot.glucoModel    = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Imagenes/QR/Gluco.fbx");
         if (boot.pancreasModel == null) Debug.LogWarning("[ProjectSetup] Pancreas.fbx no encontrado");
         if (boot.platoModel == null) Debug.LogWarning("[ProjectSetup] Plato.fbx no encontrado");
@@ -161,6 +171,8 @@ public static class ProjectSetup
         if (boot.font == null) Debug.LogWarning("[ProjectSetup] Nunito SDF no encontrada; usa ARDiabetes/Crear fuente Nunito");
 
         boot.markersFisio = LoadMarkers("qr_diabetes", "qr_pancreas", "qr_insulina", "qr_funciona");
+        // Image Targets del cliente: se suman a los impresos (mismo tema; el 2.º no tiene).
+        boot.markersFisioExtra = new[] { LoadMarkers("qr_fisio_inmunitario")[0], null, LoadMarkers("qr_fisio_insulina_celula")[0], LoadMarkers("qr_fisio_glucagon")[0] };
         boot.markersNutri = LoadMarkers("qr_nutri_plato", "qr_nutri_carbohidratos", "qr_nutri_recomendados", "qr_nutri_habitos");
         boot.markersClinico = LoadMarkers("qr_clinico_insulina", "qr_clinico_sintomas", "qr_clinico_monitoreo", "qr_clinico_cuidados");
 

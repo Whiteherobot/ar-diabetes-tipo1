@@ -59,6 +59,9 @@ namespace ARDiabetes
         public GameObject pancreasModel, platoModel, glucoModel;
         public GameObject[] nutriModelos; // un modelo animado por tema del libro Nutricional
         public Texture2D[] nutriPaletas;  // paleta de color de cada uno (mismo orden)
+        public GameObject[] fisioModelos; // libro Fisiológico: modelo animado por tema (null = páncreas)
+        public Sprite[] fisioIlustraciones; // ilustración DESCUBRE por tema (null = la de siempre)
+        public Texture2D[] markersFisioExtra; // Image Targets del cliente, sumados a los marcadores impresos
         public TMP_FontAsset font;
 
         [Header("Iconos UI")]
@@ -203,10 +206,13 @@ namespace ARDiabetes
                 if (books[b].Markers == null) continue;
                 for (int i = 0; i < books[b].Markers.Length; i++)
                 {
-                    var m = books[b].Markers[i];
-                    if (m == null) continue;
                     string title = i < books[b].TopicTitle.Length ? books[b].TopicTitle[i] : books[b].Title;
-                    scanEntries.Add(new MarkerEntry { Marker = m, Model = books[b].ModelFor(i), Paleta = books[b].PaletaFor(i), Tint = books[b].ModelTint, Title = title, Book = b, Topic = i });
+                    // El marcador impreso y, si hay, el Image Target del cliente abren el mismo tema.
+                    foreach (var m in new[] { books[b].Markers[i], books[b].MarkerExtraFor(i) })
+                    {
+                        if (m == null) continue;
+                        scanEntries.Add(new MarkerEntry { Marker = m, Model = books[b].ModelFor(i), Paleta = books[b].PaletaFor(i), Tint = books[b].ModelTint, Title = title, Book = b, Topic = i });
+                    }
                 }
             }
             if (includesAr && !EnDemo) // en la demo de escritorio se usa el visor 3D

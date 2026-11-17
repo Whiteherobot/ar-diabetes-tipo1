@@ -24,6 +24,21 @@ namespace ARDiabetes
         public string[] TopicSub;
         public Sprite[] TopicIcon;
         public Texture2D[] Markers;
+        public Texture2D[] MarkersExtra;      // opcional: 2.º marcador por tema (Image Targets del cliente); ambos sirven
+        public Sprite[] TopicIlustracion;     // opcional: ilustración del bloque DESCUBRE de cada tema
+        public string[] TopicDescubre;        // opcional: texto del cliente que se suma a la descripción en el detalle
+
+        public Texture2D MarkerExtraFor(int topic) =>
+            MarkersExtra != null && topic >= 0 && topic < MarkersExtra.Length ? MarkersExtra[topic] : null;
+        public Sprite IlustracionFor(int topic) =>
+            TopicIlustracion != null && topic >= 0 && topic < TopicIlustracion.Length ? TopicIlustracion[topic] : null;
+
+        /// <summary>Texto del detalle: la descripción del tema y, si hay, el texto del cliente.</summary>
+        public string DescDetalle(int topic)
+        {
+            string extra = TopicDescubre != null && topic < TopicDescubre.Length ? TopicDescubre[topic] : null;
+            return string.IsNullOrEmpty(extra) ? Desc(topic) : Desc(topic) + "\n\n" + extra;
+        }
         public AudioClip[] Narration;
 
         // Misma info en 3 niveles de lenguaje. La app usa por ahora un solo nivel (DescPre, 10-12 años);

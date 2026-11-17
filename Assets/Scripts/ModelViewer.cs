@@ -40,6 +40,7 @@ namespace ARDiabetes
         {
             var sh = Shader.Find("Standard");
             if (sh == null) return;
+            if (paleta == null && ColoresPropios(model)) { ConservarColores(model, sh, brillo); return; }
             var mat = paleta != null ? new Material(sh) { color = Color.white, mainTexture = paleta }
                                      : new Material(sh) { color = tint };
             mat.SetFloat("_Glossiness", brillo);
@@ -47,6 +48,26 @@ namespace ARDiabetes
             {
                 var mats = new Material[r.sharedMaterials.Length];
                 for (int i = 0; i < mats.Length; i++) mats[i] = mat;
+                r.sharedMaterials = mats;
+            }
+        }
+
+        // Los modelos del libro Fisiológico (Fisio_*.fbx) no traen texturas: cada pieza tiene su color
+        // en el material del FBX. Se conservan esos colores en vez de teñir todo con el color del libro.
+        static bool ColoresPropios(GameObject model) => model.name.StartsWith("Fisio_");
+
+        static void ConservarColores(GameObject model, Shader sh, float brillo)
+        {
+            foreach (var r in model.GetComponentsInChildren<Renderer>())
+            {
+                var mats = new Material[r.sharedMaterials.Length];
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    var orig = r.sharedMaterials[i];
+                    var color = orig != null && orig.HasProperty("_Color") ? orig.color : Color.white;
+                    mats[i] = new Material(sh) { color = color };
+                    mats[i].SetFloat("_Glossiness", brillo);
+                }
                 r.sharedMaterials = mats;
             }
         }

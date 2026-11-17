@@ -342,6 +342,8 @@ namespace ARDiabetes
                     var names = new List<string>();
                     if (books[book].Markers != null)
                         foreach (var m in books[book].Markers) if (m != null) names.Add(m.name);
+                    if (books[book].MarkersExtra != null)
+                        foreach (var m in books[book].MarkersExtra) if (m != null) names.Add(m.name);
                     arController?.SetScope(names);
                     if (arTitle != null && books != null && currentTopic < books[book].TopicTitle.Length) arTitle.text = books[book].TopicTitle[currentTopic];
                     if (books != null) currentArInfoText = books[book].Desc(currentTopic);
