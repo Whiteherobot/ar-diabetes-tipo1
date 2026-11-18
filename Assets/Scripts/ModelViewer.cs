@@ -52,9 +52,15 @@ namespace ARDiabetes
             }
         }
 
-        // Los modelos del libro Fisiológico (Fisio_*.fbx) no traen texturas: cada pieza tiene su color
-        // en el material del FBX. Se conservan esos colores en vez de teñir todo con el color del libro.
-        static bool ColoresPropios(GameObject model) => model.name.StartsWith("Fisio_");
+        // Los modelos de los libros Fisiológico y Clínico (Fisio_*.fbx, Clin_*.fbx) no traen texturas:
+        // cada pieza tiene su color en el material del FBX. Se conservan esos colores en vez de teñir
+        // todo con el color del libro.
+        static bool ColoresPropios(GameObject model) => model.name.StartsWith("Fisio_") || model.name.StartsWith("Clin_");
+
+        /// <summary>Material Standard en modo Fade guardado como asset (lo asigna AppBootstrap): las
+        /// piezas semitransparentes (el agua del lavado de manos) se copian de él. Con un material
+        /// creado por código el build podría no traer la variante transparente del shader.</summary>
+        public static Material MaterialTransparente;
 
         static void ConservarColores(GameObject model, Shader sh, float brillo)
         {
@@ -65,11 +71,23 @@ namespace ARDiabetes
                 {
                     var orig = r.sharedMaterials[i];
                     var color = orig != null && orig.HasProperty("_Color") ? orig.color : Color.white;
-                    mats[i] = new Material(sh) { color = color };
+                    bool transparente = color.a < .99f && MaterialTransparente != null;
+                    mats[i] = transparente ? new Material(MaterialTransparente) { color = color } : new Material(sh) { color = color };
                     mats[i].SetFloat("_Glossiness", brillo);
                 }
                 r.sharedMaterials = mats;
             }
+        }
+
+        /// <summary>Tamaño (lado mayor, en metros) del modelo sobre el marcador: ~9 cm, salvo los muy
+        /// alargados (la secuencia de la insulina es una tira de estaciones), que con 9 cm quedaban
+        /// diminutos: esos van a 15 cm.</summary>
+        public static float TamanoEnAR(Bounds b)
+        {
+            var s = b.size;
+            float mayor = Mathf.Max(s.x, s.y, s.z);
+            float medio = s.x + s.y + s.z - mayor - Mathf.Min(s.x, s.y, s.z);
+            return medio > 0f && mayor / medio > 2.5f ? 0.15f : 0.09f;
         }
 
         /// <summary>
@@ -104,6 +122,8 @@ namespace ARDiabetes
         {
             var anim = model.GetComponentInChildren<Animation>();
             if (anim == null || anim.clip == null) return;
+            // El de autocuidado es interactivo: su componente decide cuándo corre y cuándo se detiene el clip.
+            if (Autocuidado.Corresponde(model)) { if (model.GetComponent<Autocuidado>() == null) model.AddComponent<Autocuidado>(); return; }
             anim.cullingType = AnimationCullingType.AlwaysAnimate;
             anim.wrapMode = WrapMode.Loop;
             anim.Play(anim.clip.name);
@@ -134,6 +154,11 @@ namespace ARDiabetes
             model.transform.localPosition = Vector3.zero;
             model.transform.localRotation = Quaternion.identity;
             model.transform.localScale = Vector3.one; // el prefab puede traer escala no uniforme; normalizar antes de medir bounds
+            // Los del libro Clínico están armados para verse desde arriba (sobre la página): en el visor
+            // se inclinan hacia la cámara. El de autocuidado además se gira para leer su calendario.
+            if (prefab != null && prefab.name.StartsWith("Clin_"))
+                model.transform.localRotation = Quaternion.Euler(Autocuidado.Corresponde(prefab) ? -60f : -35f, 0f, 0f)
+                    * Quaternion.Euler(0f, Autocuidado.Corresponde(prefab) ? 180f : 0f, 0f);
             SetLayer(model, Layer);
             StripEmbeddedCamerasAndLights(model);
 
@@ -148,6 +173,8 @@ namespace ARDiabetes
             }
             IniciarAnimacion(model);
             holder.localRotation = rotacion;
+            // Sin auto-giro en el interactivo: se toca cada actividad y girando costaría acertarle.
+            if (spinner != null) spinner.spinning = !Autocuidado.Corresponde(model);
         }
 
         void Build(GameObject prefab, Color tint)
@@ -209,6 +236,18 @@ namespace ARDiabetes
             float nuevo = Mathf.Clamp(userScale + paso, .7f, 1.4f);
             if (holder != null) holder.localScale *= nuevo / userScale;
             userScale = nuevo;
+        }
+
+        /// <summary>Toque sobre el RawImage que muestra este visor: lo pasa al modelo interactivo, si hay.</summary>
+        public bool Tocar(RectTransform imagen, Vector2 pantalla, Camera camUI)
+        {
+            var auto = modelo != null ? modelo.GetComponent<Autocuidado>() : null;
+            if (auto == null || cam == null || imagen == null) return false;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(imagen, pantalla, camUI, out var local)) return false;
+            var r = imagen.rect;
+            var uv = new Vector2((local.x - r.xMin) / r.width, (local.y - r.yMin) / r.height);
+            if (uv.x < 0 || uv.x > 1 || uv.y < 0 || uv.y > 1) return false;
+            return auto.Tocar(cam.ViewportPointToRay(uv));
         }
 
         /// <summary>Enciende/apaga el render de este visor. Solo debe estar activo el del libro

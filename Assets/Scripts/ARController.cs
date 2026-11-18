@@ -270,9 +270,23 @@ namespace ARDiabetes
                 if (ModelViewer.Limites(spawned, out var b))
                 {
                     float size = Mathf.Max(b.size.x, b.size.y, b.size.z);
-                    if (size > 0.0001f) spawned.transform.localScale *= 0.09f / size;
+                    float tamano = Autocuidado.Corresponde(spawned) ? 0.13f : ModelViewer.TamanoEnAR(b); // el interactivo, más grande para tocarlo
+                    if (spawned.name.StartsWith("Clin_"))
+                    {
+                        // Los del libro Clínico no tienen el origen en el centro (la tira de la insulina se
+                        // salía de la página): van dentro de un contenedor, corridos para quedar centrados.
+                        var modelo = spawned;
+                        spawned = new GameObject(modelo.name);
+                        modelo.transform.SetParent(spawned.transform, false);
+                        modelo.transform.localPosition = new Vector3(-b.center.x, 0f, -b.center.z);
+                    }
+                    if (size > 0.0001f) spawned.transform.localScale *= tamano / size;
                 }
                 ModelViewer.IniciarAnimacion(spawned);
+                // En el interactivo (autocuidado) el modelo no gira solo: hay que tocar cada actividad.
+                // Además se gira media vuelta: el calendario se lee desde el borde de abajo de la página.
+                autoSpin = !Autocuidado.Corresponde(spawned);
+                if (!autoSpin) userYaw = 180f;
                 spawnedMarkerName = name;
                 if (entry.Title != null) OnMarkerTitle?.Invoke(entry.Title);
                 if (entry.Book >= 0 && entry.Topic >= 0) OnMarkerSeen?.Invoke(entry.Book, entry.Topic);
@@ -324,7 +338,17 @@ namespace ARDiabetes
 
             string text = (entry.Book >= 0 && entry.Topic >= 0 && GetInfoText != null)
                 ? GetInfoText(entry.Book, entry.Topic) : entry.Title;
-            var txt = UIKit.Text(go.transform, text ?? "", 34, UIKit.Navy, TextAlignmentOptions.Center, FontStyles.Normal);
+            // Textos largos (los del cliente, con títulos): panel más ancho, letra menor, alineado a la
+            // izquierda y tan alto como haga falta.
+            bool largo = text != null && text.Length > 180;
+            var txt = UIKit.Text(go.transform, text ?? "", largo ? 28 : 34, UIKit.Navy, largo ? TextAlignmentOptions.TopLeft : TextAlignmentOptions.Center, FontStyles.Normal);
+            if (largo)
+            {
+                float ancho = 640f;
+                float alto = txt.GetPreferredValues(text, ancho - 80f, 0f).y;
+                rt.sizeDelta = new Vector2(ancho, Mathf.Max(300f, alto + 80f));
+                rt.localPosition = new Vector3(0.17f, 0.04f, 0f);
+            }
             UIKit.Stretch(txt.rectTransform, 40);
 
             infoPanel = go;
@@ -378,5 +402,13 @@ namespace ARDiabetes
         }
 
         public void ToggleSpin() { autoSpin = !autoSpin; }
+
+        /// <summary>Toque en pantalla: si el modelo anclado es interactivo, recibe el rayo de la cámara AR.</summary>
+        public bool Tocar(Vector2 pantalla)
+        {
+            if (spawned == null || !spawned.activeInHierarchy || arCam == null) return false;
+            var auto = spawned.GetComponent<Autocuidado>();
+            return auto != null && auto.Tocar(arCam.ScreenPointToRay(pantalla));
+        }
     }
 }

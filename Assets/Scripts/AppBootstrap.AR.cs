@@ -26,6 +26,8 @@ namespace ARDiabetes
 
             var raw = new GameObject("Model3D", typeof(RectTransform)).AddComponent<RawImage>();
             raw.transform.SetParent(p, false); raw.raycastTarget = false;
+            // Tocar el modelo: en AR real con la cámara AR; en el visor, sobre la imagen que lo muestra.
+            dr.OnTap = (pos, camUI) => { if (arController != null && arController.Tocar(pos)) return; modelViewer?.Tocar(raw.rectTransform, pos, camUI); };
             var mv = viewerGetter();
             if (mv != null) { raw.texture = mv.Texture; raw.color = Color.white; }
             else raw.color = new Color(1, 1, 1, 0);

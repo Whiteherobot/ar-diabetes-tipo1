@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEngine;
 
 /// <summary>
-/// Modelos animados del cliente (Imagenes/QR/Nutri_*.fbx y Fisio_*.fbx): traen un clip cada uno. Se importan
+/// Modelos animados del cliente (Imagenes/QR/Nutri_*, Fisio_* y Clin_*.fbx): traen un clip cada uno. Se importan
 /// como animación Legacy en bucle, así basta el componente Animation que Unity agrega al prefab
 /// (sin Animator Controller), tanto en el AR como en el visor de respaldo.
 /// Sus texturas embebidas Unity no las extrae: las paletas están en Imagenes/QR/Texturas/ y se
@@ -11,7 +11,7 @@ using UnityEngine;
 public class ImportarModelosAnimados : AssetPostprocessor
 {
     static bool EsAnimado(string path) =>
-        (path.StartsWith("Assets/Imagenes/QR/Nutri_") || path.StartsWith("Assets/Imagenes/QR/Fisio_")) && path.EndsWith(".fbx");
+        (path.StartsWith("Assets/Imagenes/QR/Nutri_") || path.StartsWith("Assets/Imagenes/QR/Fisio_") || path.StartsWith("Assets/Imagenes/QR/Clin_")) && path.EndsWith(".fbx");
 
     void OnPreprocessModel()
     {
@@ -21,6 +21,10 @@ public class ImportarModelosAnimados : AssetPostprocessor
         mi.animationType = ModelImporterAnimationType.Legacy;
         mi.importCameras = false;
         mi.importLights = false;
+        // En los del libro Clínico el clip anima el objeto principal del FBX (el glucómetro entra
+        // volando y cambia de tamaño). Sin conservar la jerarquía ese objeto sería la raíz del prefab
+        // y el clip pisaría la escala con que la app encaja el modelo (salía de metros).
+        if (assetPath.StartsWith("Assets/Imagenes/QR/Clin_")) mi.preserveHierarchy = true;
     }
 
     // Paletas: bloques de color planos; sin compresión ni mipmaps para que no se mezclen.
