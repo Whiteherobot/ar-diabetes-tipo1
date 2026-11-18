@@ -162,7 +162,7 @@ namespace ARDiabetes
             if (!land) UIKit.Frac(campo, 0.05f, 0.71f, 0.95f, 0.79f);
             else UIKit.Frac(campo, 0.25f, 0.60f, 0.75f, 0.74f);
 
-            // 3 personajes (uno por mundo) en una fila; en la tarjeta va el busto ilustrado.
+            // 3 personajes (uno por mundo) en una fila; en la tarjeta va solo la cabeza del robot.
             var lista = Personajes;
             int cols = 3, rows = 1;
             float x0 = land ? 0.20f : 0.05f, x1 = land ? 0.80f : 0.95f;
@@ -174,8 +174,8 @@ namespace ARDiabetes
             for (int i = 0; i < lista.Length; i++)
             {
                 var rc = UIKit.Cell(i, cols, rows, x0, y0, x1, y1, gx, gy);
-                var busto = bustos != null && i < bustos.Length && bustos[i] != null ? bustos[i] : lista[i];
-                marcos[i] = PersonajeOption(p, rc, busto, i, marcos);
+                var cabeza = cabezas != null && i < cabezas.Length && cabezas[i] != null ? cabezas[i] : lista[i];
+                marcos[i] = PersonajeOption(p, rc, cabeza, i, marcos);
             }
             for (int i = 0; i < marcos.Length; i++) marcos[i].SetActive(i == elegido);
 
@@ -246,7 +246,7 @@ namespace ARDiabetes
 
             var img = UIKit.Img(btn.transform, robot, "Robot");
             img.preserveAspect = true;
-            UIKit.Stretch(img.rectTransform, 10f * S);
+            UIKit.Stretch(img.rectTransform, 14f * S);
             return marco.gameObject;
         }
 
@@ -301,9 +301,12 @@ namespace ARDiabetes
             heroBlob2.color = new Color(47f / 255f, 174f / 255f, 117f / 255f, .13f);
             UIKit.TopLeft(heroBlob2.rectTransform, -65f * S, T + 245f * S, 135f * S, 135f * S);
 
-            var heroRobots = BuildRobotGroup(hero.transform, PersonajeElegido());
-            UIKit.TopLeft(heroRobots, heroW - 249f * S, T + 162f * S, 252f * S, 169f * S);
-            Anim.HeroLlega(heroRobots);
+            // Solo la cabeza del robot elegido como avatar (antes iba el trío de robots).
+            var heroRobot = UIKit.Img(hero.transform, CabezaElegida(), "RobotFront");
+            heroRobot.preserveAspect = true;
+            UIKit.TopLeft(heroRobot.rectTransform, heroW - 196f * S, T + 150f * S, 176f * S, 166f * S);
+            UIKit.SombraImagen(heroRobot, .15f, 5f * S);
+            Anim.HeroLlega(heroRobot.rectTransform);
 
             var heroTitle = UIKit.Text(hero.transform, AppState.Greeting, 31f * S, UIKit.Navy, TextAlignmentOptions.Left);
             UIKit.Interlinea(heroTitle, 1.1f);
@@ -333,15 +336,8 @@ namespace ARDiabetes
             UIKit.TopLeft(starLabel.rectTransform, 38f * S, 6f * S, 34f * S, 30f * S);
             y += heroH + 22f * S;
 
-            // ---- Explora ----
-            // Tarjeta ilustrada del cliente; el botón EXPLORA AHORA va abajo a la izquierda, debajo del texto.
-            float featureW = columnW - 40f * S;
-            var explore = TarjetaImagen(content, recExplorar, y, featureW, out float featureH, () => ShowOnly(pMundos), "explore-feature");
-            explore.gameObject.AddComponent<Appear>().delay = .05f;
-            float btnW = featureW * .44f, btnH = recExploraAhora != null ? btnW * recExploraAhora.rect.height / recExploraAhora.rect.width : 50f * S;
-            var exploreButton = BotonImagen(explore.transform, recExploraAhora, () => ShowOnly(pMundos), "ExploraAhora");
-            UIKit.TopLeft(R(exploreButton), featureW * .045f, featureH * .67f, btnW, btnH);
-            y += featureH + 28f * S;
+            // La tarjeta «¡Comienza a explorar!» se quitó por pedido del cliente (18 nov):
+            // las tarjetas de aventura de abajo ya llevan a cada mundo.
 
             // ---- Aventuras ----
             var adventureTitle = UIKit.Text(content, "Elige tu aventura", 23f * S, UIKit.Navy, TextAlignmentOptions.Left);

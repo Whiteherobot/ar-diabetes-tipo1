@@ -310,8 +310,8 @@ namespace ARDiabetes
             var wa = UIKit.Box(welcome.transform, UIKit.Hex("E6F3FF"), Mathf.RoundToInt(19f * S), "Avatar");
             UIKit.TopLeft(wa.rectTransform, 23f * S, 23f * S, 64f * S, 64f * S);
             wa.gameObject.AddComponent<Mask>();
-            var wr = UIKit.Img(wa.transform, PersonajeElegido(), "Robot"); wr.preserveAspect = true;
-            UIKit.TopLeft(wr.rectTransform, 3.5f * S, 6f * S, 57f * S, 69f * S);
+            var wr = UIKit.Img(wa.transform, CabezaElegida(), "Robot"); wr.preserveAspect = true;
+            UIKit.TopLeft(wr.rectTransform, 8f * S, 8f * S, 48f * S, 48f * S);
             var wk = UIKit.Text(welcome.transform, "TU CENTRO DE AYUDA", 11f * S, UIKit.Hex("C25F15"), TextAlignmentOptions.Left);
             wk.characterSpacing = 8f;
             UIKit.TopLeft(wk.rectTransform, 100f * S, 30f * S, cardW - 123f * S, 17f * S);

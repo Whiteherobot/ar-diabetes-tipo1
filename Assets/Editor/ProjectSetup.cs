@@ -65,6 +65,8 @@ public static class ProjectSetup
         boot.robotNaranja  = boot.robotVerde;
         boot.robotRosa     = boot.robotCoral;
         boot.bustos        = new[] { L(Rec + "Busto_Verde.png"), L(Rec + "Busto_Azul.png"), L(Rec + "Busto_Coral.png") };
+        // Solo la cabeza de cada robot: perfil, inicio, progreso y ayuda (pedido del cliente, 18 nov).
+        boot.cabezas       = new[] { L(Rec + "Cabeza_Verde.png"), L(Rec + "Cabeza_Azul.png"), L(Rec + "Cabeza_Coral.png") };
         boot.recFondoInicio = L(Rec + "Fondo_Inicio.png");
         boot.recBienvenida = new[] { L(Rec + "Fondo_Bienvenida1.png"), L(Rec + "Fondo_Bienvenida2.png"), L(Rec + "Fondo_Bienvenida3.png") };
         boot.recComenzar   = L(Rec + "Btn_Comenzar.png");
@@ -178,6 +180,14 @@ public static class ProjectSetup
         {
             boot.clinNarracion[i] = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Narracion/clin_{n}.wav");
             if (boot.clinNarracion[i] == null) Debug.LogWarning($"[ProjectSetup] clin_{n}.wav no encontrado");
+        }
+
+        // Narraciones nuevas del libro Fisiológico (texto del cliente, 18 nov), por tema original.
+        boot.fisioNarracion = new AudioClip[4];
+        foreach (var (i, n) in new[] { (0, "inmunitario"), (2, "glucosa"), (3, "glucagon") })
+        {
+            boot.fisioNarracion[i] = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Narracion/fisio_{n}.wav");
+            if (boot.fisioNarracion[i] == null) Debug.LogWarning($"[ProjectSetup] fisio_{n}.wav no encontrado");
         }
 
         boot.musicaFondo = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Musica/musica_fondo.wav");

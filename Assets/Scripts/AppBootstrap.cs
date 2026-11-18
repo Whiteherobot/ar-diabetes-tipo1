@@ -47,6 +47,7 @@ namespace ARDiabetes
         public Sprite robotCoral, robotVerde, robotAzul, robotMorado, robotNaranja, robotRosa;
         [Header("Ilustraciones del cliente (Imagenes/Diseño/Recursos)")]
         public Sprite[] bustos; // verde, azul, coral: mismo orden que Personajes
+        public Sprite[] cabezas; // solo la cabeza de cada robot, mismo orden que Personajes
         public Sprite recFondoInicio, recComenzar, recSiguiente, recOmitir;
         public Sprite[] recBienvenida;
         public Sprite recExplorar, recExploraAhora, recIntroMundos, recEscanear, recJuegos;
@@ -64,6 +65,7 @@ namespace ARDiabetes
         public Texture2D[] markersFisioExtra; // Image Targets del cliente, sumados a los marcadores impresos
         public GameObject[] clinModelos;      // libro Clínico: modelo animado por tema (null = glucómetro)
         public Texture2D[] markersClinicoExtra, markersNutriExtra; // Image Targets del cliente de esos libros
+        public AudioClip[] fisioNarracion;    // narraciones nuevas del libro Fisiológico (por tema original)
         public AudioClip[] clinNarracion;     // narraciones del cliente del libro Clínico (null = la de siempre)
         public Material materialTransparente; // Standard Fade, para piezas semitransparentes de los modelos
         public TMP_FontAsset font;
@@ -148,6 +150,14 @@ namespace ARDiabetes
         {
             var elegido = Personajes[PersonajeVigente(AppState.Character)];
             return elegido != null ? elegido : robotVerde;
+        }
+
+        // Cabeza del robot elegido como avatar (si falta el recurso, el robot entero).
+        Sprite CabezaElegida()
+        {
+            int i = PersonajeVigente(AppState.Character);
+            var cabeza = cabezas != null && i < cabezas.Length ? cabezas[i] : null;
+            return cabeza != null ? cabeza : PersonajeElegido();
         }
 
         void Awake()
