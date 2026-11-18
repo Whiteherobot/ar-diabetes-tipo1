@@ -382,19 +382,24 @@ namespace ARDiabetes
             var book = books[quizBook];
             var q = book.Quiz[quizQ];
             r.Elegida = -1;
-            // Se mezclan las opciones para que la correcta no quede siempre primero
-            r.Orden = new[] { 0, 1, 2, 3 };
-            for (int i = 3; i > 0; i--)
+            // Se mezclan las opciones para que la correcta no quede siempre primero. Hay preguntas
+            // de 4 opciones y de 3 (las del Libro Clínico): los botones que sobran se ocultan.
+            int n = Mathf.Min(q.Options.Length, 4);
+            r.Orden = new int[n];
+            for (int i = 0; i < n; i++) r.Orden[i] = i;
+            for (int i = n - 1; i > 0; i--)
             {
                 int j = Random.Range(0, i + 1);
                 int t = r.Orden[i]; r.Orden[i] = r.Orden[j]; r.Orden[j] = t;
             }
-            r.Progress.text = "Pregunta " + (quizQ + 1) + " de " + book.Quiz.Length;
-            r.ProgressType.text = TextoTipo(q);
+            r.Progress.text = string.IsNullOrEmpty(q.Mision)
+                ? "Pregunta " + (quizQ + 1) + " de " + book.Quiz.Length
+                : q.Mision + " · " + q.NumEnMision + " de " + q.TotalMision;
+            r.ProgressType.text = string.IsNullOrEmpty(q.MisionTema) ? TextoTipo(q) : q.MisionTema;
             SetProgress(r.ProgressFill, (quizQ + 1f) / book.Quiz.Length);
             r.CoachTxt.text = TextoCoach(q);
             r.Tipo.text = TextoTipo(q).ToUpper();
-            for (int i = 0; i < 4; i++) r.Opciones[i].Btn.interactable = true;
+            for (int i = 0; i < 4; i++) r.Opciones[i].Btn.interactable = i < n;
             AcomodarQuiz(r);
             r.Content.anchoredPosition = Vector2.zero;
         }
@@ -471,6 +476,10 @@ namespace ARDiabetes
             for (int i = 0; i < 4; i++)
             {
                 var o = r.Opciones[i];
+                bool usada = i < r.Orden.Length;
+                o.Btn.gameObject.SetActive(usada); o.Sombra.gameObject.SetActive(usada);
+                o.Audio.gameObject.SetActive(usada); o.AudioSombra.gameObject.SetActive(usada);
+                if (!usada) continue;
                 int real = r.Orden[i];
                 string texto = q.Options[real];
                 bool respondida = r.Elegida >= 0;

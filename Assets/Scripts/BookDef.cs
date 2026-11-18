@@ -27,6 +27,10 @@ namespace ARDiabetes
         public Texture2D[] MarkersExtra;      // opcional: 2.º marcador por tema (Image Targets del cliente); ambos sirven
         public Sprite[] TopicIlustracion;     // opcional: ilustración del bloque DESCUBRE de cada tema
         public string[] TopicDescubre;        // opcional: texto del cliente que se suma a la descripción en el detalle
+        public string[] TopicInfoAR;          // opcional: texto del botón Información en la pantalla AR (si no, la descripción)
+
+        public string InfoAR(int topic) =>
+            TopicInfoAR != null && topic >= 0 && topic < TopicInfoAR.Length && !string.IsNullOrEmpty(TopicInfoAR[topic]) ? TopicInfoAR[topic] : Desc(topic);
 
         public Texture2D MarkerExtraFor(int topic) =>
             MarkersExtra != null && topic >= 0 && topic < MarkersExtra.Length ? MarkersExtra[topic] : null;
@@ -60,6 +64,8 @@ namespace ARDiabetes
         public string Q;
         public string[] Options;
         public int Correct;
+        public string Mision, MisionTema; // opcional: «Misión 1» y «Monitoreo de glucosa» cuando el libro tiene varias misiones
+        public int NumEnMision, TotalMision; // posición dentro de su misión (1..n) para el contador
         public bool EsRelacion => Q.Contains("Relaciona");
         public bool EsFrase => Q.Contains("______");
     }

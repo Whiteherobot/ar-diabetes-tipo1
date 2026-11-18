@@ -125,6 +125,15 @@ public static class ProjectSetup
         boot.fisioModelos = new[] { Fisio("Inmunitario"), null, Fisio("InsulinaCelula"), Fisio("Glucagon") };
         const string Desc = "Assets/Imagenes/Diseño/Recursos/Descubre/";
         boot.fisioIlustraciones = new[] { L(Desc + "Fisio_Inmunitario.png"), null, L(Desc + "Fisio_InsulinaCelula.png"), L(Desc + "Fisio_Glucagon.png") };
+        // Libro Clínico: modelos animados del cliente (tema 2, Síntomas, sigue con Gluco.fbx).
+        GameObject Clin(string n)
+        {
+            var m = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Imagenes/QR/Clin_" + n + ".fbx");
+            if (m == null) Debug.LogWarning("[ProjectSetup] Falta Clin_" + n + ".fbx");
+            return m;
+        }
+        boot.clinModelos = new[] { Clin("Insulina"), null, Clin("Glucometro"), Clin("Autocuidado") };
+        boot.materialTransparente = MaterialTransparente();
         boot.glucoModel    = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Imagenes/QR/Gluco.fbx");
         if (boot.pancreasModel == null) Debug.LogWarning("[ProjectSetup] Pancreas.fbx no encontrado");
         if (boot.platoModel == null) Debug.LogWarning("[ProjectSetup] Plato.fbx no encontrado");
@@ -163,6 +172,14 @@ public static class ProjectSetup
             if (boot.narracion[i] == null) Debug.LogWarning($"[ProjectSetup] narracion_{i}.wav no encontrado");
         }
 
+        // Narraciones del cliente del libro Clínico (los temas sin archivo usan narracion_N).
+        boot.clinNarracion = new AudioClip[4];
+        foreach (var (i, n) in new[] { (0, "insulina"), (2, "glucometro"), (3, "autocuidado") })
+        {
+            boot.clinNarracion[i] = AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Narracion/clin_{n}.wav");
+            if (boot.clinNarracion[i] == null) Debug.LogWarning($"[ProjectSetup] clin_{n}.wav no encontrado");
+        }
+
         boot.musicaFondo = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Musica/musica_fondo.wav");
         if (boot.musicaFondo == null) Debug.LogWarning("[ProjectSetup] musica_fondo.wav no encontrado");
 
@@ -173,6 +190,8 @@ public static class ProjectSetup
         boot.markersFisio = LoadMarkers("qr_diabetes", "qr_pancreas", "qr_insulina", "qr_funciona");
         // Image Targets del cliente: se suman a los impresos (mismo tema; el 2.º no tiene).
         boot.markersFisioExtra = new[] { LoadMarkers("qr_fisio_inmunitario")[0], null, LoadMarkers("qr_fisio_insulina_celula")[0], LoadMarkers("qr_fisio_glucagon")[0] };
+        boot.markersClinicoExtra = new[] { LoadMarkers("qr_clin_insulina")[0], null, LoadMarkers("qr_clin_glucometro")[0], LoadMarkers("qr_clin_autocuidado")[0] };
+        boot.markersNutriExtra = new[] { LoadMarkers("qr_nutri_extra_plato")[0], LoadMarkers("qr_nutri_extra_carbohidratos")[0], LoadMarkers("qr_nutri_extra_recomendados")[0], null };
         boot.markersNutri = LoadMarkers("qr_nutri_plato", "qr_nutri_carbohidratos", "qr_nutri_recomendados", "qr_nutri_habitos");
         boot.markersClinico = LoadMarkers("qr_clinico_insulina", "qr_clinico_sintomas", "qr_clinico_monitoreo", "qr_clinico_cuidados");
 
@@ -362,6 +381,26 @@ public static class ProjectSetup
             Debug.Log("[ARF] compatible=" + string.Join(",", p.versions.compatible));
         }
         else Debug.Log("[ARF] search failed: " + (req.Error != null ? req.Error.message : "?"));
+    }
+
+    /// <summary>Material Standard en modo Fade (para el agua del modelo de la insulina). Se guarda como
+    /// asset y lo referencia la escena, así el build incluye la variante transparente del shader.</summary>
+    static Material MaterialTransparente()
+    {
+        const string ruta = "Assets/Imagenes/QR/Texturas/Transparente.mat";
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(ruta);
+        if (mat != null) return mat;
+        mat = new Material(Shader.Find("Standard")) { name = "Transparente" };
+        mat.SetFloat("_Mode", 2f);
+        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        mat.SetInt("_ZWrite", 0);
+        mat.DisableKeyword("_ALPHATEST_ON");
+        mat.EnableKeyword("_ALPHABLEND_ON");
+        mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        AssetDatabase.CreateAsset(mat, ruta);
+        return mat;
     }
 
     static Texture2D[] LoadMarkers(params string[] names)

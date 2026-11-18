@@ -8,9 +8,24 @@ namespace ARDiabetes
         // ============================================================
         // Contenido de los 3 libros
         // ============================================================
+        // Junta varias misiones en un solo quiz, anotando a cuál pertenece cada pregunta.
+        static GameItem[] Misiones(params (string mision, string tema, GameItem[] preguntas)[] misiones)
+        {
+            var todas = new List<GameItem>();
+            foreach (var (mision, tema, preguntas) in misiones)
+                for (int i = 0; i < preguntas.Length; i++)
+                {
+                    preguntas[i].Mision = mision; preguntas[i].MisionTema = tema;
+                    preguntas[i].NumEnMision = i + 1; preguntas[i].TotalMision = preguntas.Length;
+                    todas.Add(preguntas[i]);
+                }
+            return todas.ToArray();
+        }
+
         void BuildBooks()
         {
             AudioClip N(int i) => (narracion != null && i < narracion.Length) ? narracion[i] : null;
+            AudioClip ClinN(int i, AudioClip porDefecto) => clinNarracion != null && i < clinNarracion.Length && clinNarracion[i] != null ? clinNarracion[i] : porDefecto;
 
             books = new BookDef[3];
             books[0] = new BookDef
@@ -92,7 +107,7 @@ namespace ARDiabetes
                     "Mantener horarios regulares de comida, buena hidratación y control de azúcares simples mejora la variabilidad glucémica a largo plazo."
                 },
                 TopicIcon = new[] { figTemas[4], figTemas[5], figTemas[6], figTemas[7] },
-                Markers = markersNutri,
+                Markers = markersNutri, MarkersExtra = markersNutriExtra,
                 Narration = new[] { N(4), N(5), N(6), N(7) },
                 Quiz = new[]
                 {
@@ -107,43 +122,75 @@ namespace ARDiabetes
             books[2] = new BookDef
             {
                 Title = "Libro Clínico", Accent = UIKit.Clin, HeroIcon = spIconClinico,
-                Model = glucoModel, ModelTint = UIKit.Hex("4E8FD1"),
-                TopicTitle = new[] { "Uso de insulina", "Síntomas", "Monitoreo de glucosa", "Cuidados diarios" },
-                TopicSub = new[] { "Cómo aplicarla", "Reconócelos a tiempo", "Mide y controla", "Rutina de cuidado" },
+                // Modelos animados del cliente (Recursos Libro Clínico): aplicación de insulina (tema 1),
+                // glucómetro (tema 3) y autocuidado interactivo (tema 4); Síntomas sigue con Gluco.fbx.
+                Model = glucoModel, TopicModel = clinModelos, ModelTint = UIKit.Hex("4E8FD1"),
+                TopicTitle = new[] { "Cómo aplicar la insulina", "Síntomas", "Monitoreo de glucosa", "Organizo mi autocuidado" },
+                TopicSub = new[] { "Paso a paso con la pluma", "Reconócelos a tiempo", "Mide y controla", "Mi rutina diaria" },
                 DescKids = new[]
                 {
-                    "La insulina se aplica con una inyectorcita o una bombita, antes de comer, para ayudarte a usar la energía de la comida.",
+                    "La insulina se aplica con una plumita, siempre con un adulto y como dice tu equipo de salud. ¡Primero, manos limpias!",
                     "Tener mucha sed, ir mucho al baño y sentirte cansado puede avisarte que algo anda diferente.",
                     "Medir tu glucosa con el glucómetro te ayuda a saber cómo está tu cuerpo, como revisar la energía de un videojuego.",
-                    "Revisar tus piecitos, guardar bien tu insulina en frío y llevar algo dulce por si acaso son tus superpoderes de cuidado."
+                    "Comer rico y sano, medir tu glucosa, seguir tu tratamiento, jugar y dormir bien: ¡esa es tu rutina de superhéroe!"
                 },
                 DescPre = new[]
                 {
-                    "La insulina se aplica con una inyección o una bomba, generalmente antes de comer, para ayudar a que la glucosa entre a tus células.",
+                    "La insulina se aplica con una pluma o una bomba, generalmente antes de comer. Lavarse las manos, preparar la pluma, revisar la dosis y elegir la zona son pasos que se hacen siempre siguiendo a tu equipo de salud.",
                     "Mucha sed, ganas frecuentes de ir al baño y cansancio pueden indicar que tu glucosa está muy alta o muy baja.",
                     "Medir tu glucosa con el glucómetro varias veces al día te ayuda a saber cómo reacciona tu cuerpo a la comida y al ejercicio.",
-                    "Revisar tus pies, guardar bien tu insulina en frío y llevar siempre algo dulce por si tu glucosa baja son hábitos que cuidan tu salud."
+                    "El autocuidado son las acciones que haces cada día para estar sano: comer bien, medir tu glucosa, seguir tu tratamiento, moverte y descansar. ¡Arma tu rutina en el calendario!"
                 },
                 DescTeens = new[]
                 {
-                    "La insulina se administra por vía subcutánea (pluma, jeringa o bomba), habitualmente antes de las comidas, ajustando la dosis según los carbohidratos y la glucosa previa.",
+                    "La insulina se administra por vía subcutánea (pluma, jeringa o bomba): higiene de manos, purgado de la pluma, verificación de la dosis y rotación de la zona de aplicación, siempre según la indicación del equipo de salud.",
                     "Poliuria, polidipsia y fatiga son signos clásicos de hiperglucemia; temblor, sudoración y confusión pueden indicar hipoglucemia — ambos requieren atención inmediata.",
                     "El automonitoreo (glucómetro o sensor continuo) permite identificar patrones glucémicos y ajustar decisiones de insulina, alimentación y actividad física.",
-                    "La inspección diaria de los pies, la conservación adecuada de la insulina en frío y llevar una fuente rápida de glucosa son hábitos clave para prevenir complicaciones."
+                    "Una rutina diaria de autocuidado (alimentación, automonitoreo, tratamiento, actividad física y descanso) facilita el control glucémico y crea hábitos sostenibles."
+                },
+                // Contenido del botón Información en la pantalla AR (PDF del cliente).
+                TopicInfoAR = new[]
+                {
+                    "<b>¿Qué es la insulina?</b>\nLa insulina es una hormona que produce el páncreas y ayuda a que la glucosa entre en muchas células del cuerpo para utilizarse como energía.\n\n<b>¿Cómo funciona?</b>\n1. La insulina está representada por una llave azul.\n2. La llave se une a un receptor de la célula.\n3. Se activa una señal que permite la entrada de glucosa.\n4. La glucosa entra en la célula.\n5. La célula puede utilizar la glucosa para obtener energía.\n\n<b>¿Por qué es importante?</b>\nEn la diabetes tipo 1, el cuerpo produce muy poca o ninguna insulina, por lo que necesitamos administrarla como parte del tratamiento.\n\n<i>Esta animación es una demostración educativa. La administración real debe seguir las indicaciones del equipo de salud.</i>",
+                    null,
+                    "<b>¿Qué es el glucómetro?</b>\nEl glucómetro es un pequeño dispositivo que mide la cantidad de glucosa (azúcar) que tenemos en la sangre.\n\n<b>¿Cómo funciona?</b>\n1. Se coloca una tira reactiva en el glucómetro.\n2. Se aplica una pequeña muestra de sangre en la tira.\n3. El dispositivo analiza la muestra.\n4. La pantalla muestra el resultado de glucosa.\n\n<b>¿Por qué es importante?</b>\nNos ayuda a conocer nuestros niveles de glucosa y a cuidar nuestra salud siguiendo las indicaciones del equipo médico.",
+                    "<b>¿Qué es el autocuidado?</b>\nEl autocuidado es el conjunto de acciones que realizamos cada día para mantenernos saludables y controlar nuestra diabetes.\n\n<b>¿Cómo puedo cuidarme?</b>\n1. Alimentación: comer alimentos saludables y variados.\n2. Medición: revisar mi glucosa según mi plan de cuidado.\n3. Tratamiento: seguir las indicaciones de mi equipo de salud para administrar la insulina.\n4. Actividad física: realizar actividades y movimientos que disfrute.\n5. Descanso: dormir lo suficiente para recuperar energía.\n\n<b>¿Por qué es importante?</b>\nTener una rutina nos ayuda a recordar nuestras actividades y desarrollar hábitos para cuidar nuestra salud.\n\n<i>Toca las cinco actividades para ponerlas en tu calendario.</i>"
                 },
                 TopicIcon = new[] { figTemas[8], figTemas[9], figTemas[10], figTemas[11] },
-                Markers = markersClinico,
-                Narration = new[] { N(8), N(9), N(10), N(11) },
-                Quiz = new[]
-                {
-                    new GameItem { Q = "¿Qué necesitas para medir tu glucosa?",
-                        Options = new[] { "Glucómetro", "Termómetro", "Regla", "Reloj" }, Correct = 0 },
-                    new GameItem { Q = "La insulina debe aplicarse siguiendo las indicaciones de:",
-                        Options = new[] { "Tu equipo de salud", "Cualquier amigo", "Internet", "Nadie" }, Correct = 0 },
-                    new GameItem { Q = "¿Qué debes hacer antes de medir tu glucosa?",
-                        Options = new[] { "Lavar y secar tus manos", "Comer un dulce", "Correr", "Dormir" }, Correct = 0 }
-                },
+                Markers = markersClinico, MarkersExtra = markersClinicoExtra,
+                // Narraciones del cliente («Texto para el botón Audio») en los temas con modelo nuevo.
+                Narration = new[] { ClinN(0, N(8)), N(9), ClinN(2, N(10)), ClinN(3, N(11)) },
+                // Minijuegos del cliente: 3 misiones de 3 preguntas.
+                Quiz = Misiones(
+                    ("Misión 1", "Monitoreo de glucosa", new[]
+                    {
+                        new GameItem { Q = "¿Para qué sirve el glucómetro?",
+                            Options = new[] { "Medir la temperatura del cuerpo.", "Medir la cantidad de glucosa en la sangre.", "Medir el peso corporal." }, Correct = 1 },
+                        new GameItem { Q = "¿Qué colocamos en el glucómetro para realizar una medición?",
+                            Options = new[] { "Una llave.", "Una aguja de insulina.", "Una tira reactiva." }, Correct = 2 },
+                        new GameItem { Q = "¿Dónde podemos observar el resultado de nuestra glucosa?",
+                            Options = new[] { "En la pantalla del glucómetro.", "En la tira reactiva.", "En el botón del glucómetro." }, Correct = 0 },
+                    }),
+                    ("Misión 2", "Administración de insulina", new[]
+                    {
+                        new GameItem { Q = "¿A qué se parece la insulina en nuestro libro?",
+                            Options = new[] { "Una llave que ayuda a abrir la puerta de las células.", "Un reloj que mide el tiempo.", "Un termómetro que mide la temperatura." }, Correct = 0 },
+                        new GameItem { Q = "¿Qué ayuda a hacer la insulina en nuestro cuerpo?",
+                            Options = new[] { "Cambiar el color de la sangre.", "Ayudar a que la glucosa entre en muchas células.", "Medir la cantidad de glucosa." }, Correct = 1 },
+                        new GameItem { Q = "¿Qué órgano produce la insulina?",
+                            Options = new[] { "El corazón.", "Los pulmones.", "El páncreas." }, Correct = 2 },
+                    }),
+                    ("Misión 3", "Autocuidado", new[]
+                    {
+                        new GameItem { Q = "¿Cuál de estas acciones forma parte de mi autocuidado diario?",
+                            Options = new[] { "Olvidarme de mi tratamiento.", "Revisar mi glucosa según mi plan de cuidado.", "No descansar durante el día." }, Correct = 1 },
+                        new GameItem { Q = "¿Qué debo hacer si me siento mal o noto señales de alerta?",
+                            Options = new[] { "Ignorar lo que siento.", "Esperar sin decirle a nadie.", "Avisar a un adulto de confianza y seguir mi plan de cuidado." }, Correct = 2 },
+                        new GameItem { Q = "¿Qué hábitos me ayudan a cuidar mi salud?",
+                            Options = new[] { "Alimentarme bien, realizar actividad física segura y descansar.", "Comer solamente dulces.", "Dormir poco y no realizar actividades." }, Correct = 0 },
+                    })),
             };
+            for (int i = 0; i < books.Length; i++) AppState.QuizTotal[i] = books[i].Quiz.Length;
         }
     }
 }

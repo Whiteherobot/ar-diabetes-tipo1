@@ -184,10 +184,15 @@ namespace ARDiabetes
             return msgs;
         }
 
+        /// <summary>Preguntas del quiz de cada libro (las fija AppBootstrap.BuildBooks). El Clínico tiene
+        /// 3 misiones de 3 preguntas: como es el último libro, sus bits siguen desde el 8 sin pisar a los otros.</summary>
+        public static int[] QuizTotal = { 3, 3, 3 };
+        static int QuizLen(int book) => book >= 0 && book < QuizTotal.Length ? Mathf.Min(QuizTotal[book], book < 2 ? 4 : 22) : 3;
+
         static string CheckQuizBonus(int book)
         {
             int mask = PlayerPrefs.GetInt(KeyQuizMask, 0);
-            for (int i = 0; i < 3; i++) if ((mask & (1 << (book * 4 + i))) == 0) return null;
+            for (int i = 0; i < QuizLen(book); i++) if ((mask & (1 << (book * 4 + i))) == 0) return null;
             int bonusMask = PlayerPrefs.GetInt(KeyBonusMask, 0);
             int bit = 4 + book;
             if ((bonusMask & (1 << bit)) != 0) return null;
@@ -202,7 +207,7 @@ namespace ARDiabetes
         {
             int mask = PlayerPrefs.GetInt(KeyQuizMask, 0);
             int n = 0;
-            for (int i = 0; i < 3; i++) if ((mask & (1 << (book * 4 + i))) != 0) n++;
+            for (int i = 0; i < QuizLen(book); i++) if ((mask & (1 << (book * 4 + i))) != 0) n++;
             return n;
         }
 

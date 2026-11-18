@@ -62,6 +62,10 @@ namespace ARDiabetes
         public GameObject[] fisioModelos; // libro Fisiológico: modelo animado por tema (null = páncreas)
         public Sprite[] fisioIlustraciones; // ilustración DESCUBRE por tema (null = la de siempre)
         public Texture2D[] markersFisioExtra; // Image Targets del cliente, sumados a los marcadores impresos
+        public GameObject[] clinModelos;      // libro Clínico: modelo animado por tema (null = glucómetro)
+        public Texture2D[] markersClinicoExtra, markersNutriExtra; // Image Targets del cliente de esos libros
+        public AudioClip[] clinNarracion;     // narraciones del cliente del libro Clínico (null = la de siempre)
+        public Material materialTransparente; // Standard Fade, para piezas semitransparentes de los modelos
         public TMP_FontAsset font;
 
         [Header("Iconos UI")]
@@ -159,6 +163,7 @@ namespace ARDiabetes
         void Start()
         {
             if (font != null) UIKit.Font = font;
+            if (materialTransparente != null) ModelViewer.MaterialTransparente = materialTransparente;
             audioSrc = gameObject.AddComponent<AudioSource>();
             audioSrc.playOnAwake = false;
             // Cama musical de fondo, separada de audioSrc (narración) para que pausar/reanudar una
@@ -233,7 +238,7 @@ namespace ARDiabetes
             // tarjeta 2D encima de la pantalla) — ARController lo arma solo, pidiendo acá el
             // texto real (se resuelve en el momento, no se
             // precalcula una vez).
-            if (arController != null) arController.GetInfoText = (b, t) => books[b].Desc(t);
+            if (arController != null) arController.GetInfoText = (b, t) => books[b].InfoAR(t);
 
             StartCoroutine(InitialBuild());
         }

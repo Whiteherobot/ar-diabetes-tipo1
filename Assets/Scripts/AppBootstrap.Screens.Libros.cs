@@ -86,7 +86,7 @@ namespace ARDiabetes
                 var tic = UIKit.Img(disc.transform, b.TopicIcon[i], "Ic"); tic.color = Color.white; tic.preserveAspect = true;
                 UIKit.Stretch(tic.rectTransform, 23.5f * S);
 
-                float textoX = (inverso ? 20f : 105f) * S, textoW = inverso ? w - 135f * S : w - 145f * S;
+                float textoX = (inverso ? 20f : 105f) * S, textoW = inverso ? w - 150f * S : w - 145f * S; // invertida: termina antes del ícono
                 var tl = UIKit.Text(btn.transform, b.TopicTitle[i], 18f * S, UIKit.Navy, TextAlignmentOptions.Left);
                 UIKit.TamanoFijo(tl, 18f * S);
                 UIKit.Interlinea(tl, 1.364f);
