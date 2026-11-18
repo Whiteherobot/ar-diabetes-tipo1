@@ -35,8 +35,8 @@ namespace ARDiabetes
             var avatar = UIKit.Box(level.transform, UIKit.Hex("FFF5D5"), Mathf.RoundToInt(24f * S), "Avatar");
             UIKit.TopLeft(avatar.rectTransform, 22f * S, 22f * S, 92f * S, 100f * S);
             avatar.gameObject.AddComponent<Mask>();
-            var robot = UIKit.Img(avatar.transform, PersonajeElegido(), "Robot"); robot.preserveAspect = true;
-            UIKit.TopLeft(robot.rectTransform, 5f * S, 12f * S, 82f * S, 99f * S);
+            var robot = UIKit.Img(avatar.transform, CabezaElegida(), "Robot"); robot.preserveAspect = true;
+            UIKit.TopLeft(robot.rectTransform, 10f * S, 14f * S, 72f * S, 72f * S);
             float infoX = 128f * S, infoW = cardW - infoX - 22f * S;
             var statsTxt = UIKit.Text(level.transform, "", 23f * S, UIKit.Navy, TextAlignmentOptions.Left);
             UIKit.TopLeft(statsTxt.rectTransform, infoX, 22f * S, infoW, 32f * S);
@@ -97,13 +97,14 @@ namespace ARDiabetes
             int total = AppState.TopicsSeenCount();
             if (refs.Stats != null)
                 refs.Stats.text = "Nivel " + AppState.Level;
-            SetProgress(refs.OverallFill, total / 12f);
-            if (refs.Percent != null) refs.Percent.text = Mathf.RoundToInt(Mathf.Clamp01(total / 12f) * 100f) + "%";
+            const float T = AppState.TemasPorLibro;
+            SetProgress(refs.OverallFill, total / (3f * T));
+            if (refs.Percent != null) refs.Percent.text = Mathf.RoundToInt(Mathf.Clamp01(total / (3f * T)) * 100f) + "%";
             for (int i = 0; i < 3; i++)
             {
                 int seen = AppState.TopicsSeenCount(i);
-                if (refs.BookFill != null && refs.BookFill[i] != null) SetProgress(refs.BookFill[i], seen / 4f);
-                if (refs.BookCount != null && refs.BookCount[i] != null) refs.BookCount[i].text = (seen * 25) + "%";
+                if (refs.BookFill != null && refs.BookFill[i] != null) SetProgress(refs.BookFill[i], seen / T);
+                if (refs.BookCount != null && refs.BookCount[i] != null) refs.BookCount[i].text = Mathf.RoundToInt(seen / T * 100f) + "%";
             }
             RefreshPhotoGrid(refs.PhotoGrid);
         }
@@ -272,7 +273,7 @@ namespace ARDiabetes
         }
 
         // ============================================================
-        // 7C - COLECCIÓN AR (estampita por cada uno de los 12 marcadores, accedida desde Progreso)
+        // 7C - COLECCIÓN AR (estampita por cada marcador, accedida desde Progreso)
         // ============================================================
         RectTransform BuildColeccion()
         {
@@ -284,23 +285,23 @@ namespace ARDiabetes
             var subtitle = UIKit.Text(content, "", 16f * S, UIKit.Navy);
             UIKit.Top(subtitle.rectTransform, 0, 20f * S, columnW - 40f * S, 26f * S);
 
-            const int n = 12;
+            const int temas = AppState.TemasPorLibro, n = 3 * temas;
             var iconBgs = new Image[n];
             var titles = new TMP_Text[n];
             var status = new TMP_Text[n];
             var cardBook = new int[n];
             var cardTopic = new int[n];
-            // Se lee como un álbum: primero los 4 temas de cada libro, en orden.
+            // Se lee como un álbum: primero los temas de cada libro, en orden.
             for (int book = 0; book < 3; book++)
-                for (int topic = 0; topic < 4; topic++)
+                for (int topic = 0; topic < temas; topic++)
                 {
-                    int i = book * 4 + topic;
+                    int i = book * temas + topic;
                     var b = books[book];
                     iconBgs[i] = TarjetaVitrina(content, "Stamp" + book + "_" + topic, i, cardW, cardH, 60f * S, b.Accent, b.TopicIcon[topic],
                         b.TopicTitle[topic], b.Title, 24f * S, out titles[i], out status[i]);
                     cardBook[i] = book; cardTopic[i] = topic;
                 }
-            content.sizeDelta = new Vector2(columnW, 60f * S + 6 * (cardH + 12f * S) + 16f * S);
+            content.sizeDelta = new Vector2(columnW, 60f * S + Mathf.CeilToInt(n / 2f) * (cardH + 12f * S) + 16f * S);
 
             p.gameObject.AddComponent<ColeccionRefs>().Set(subtitle, iconBgs, titles, status, cardBook, cardTopic);
             return p;
@@ -311,8 +312,8 @@ namespace ARDiabetes
             if (pColeccion == null) return;
             var refs = pColeccion.GetComponent<ColeccionRefs>();
             if (refs == null) return;
-            if (refs.Subtitle != null) refs.Subtitle.text = AppState.MarkersScannedCount() + "/12 páginas coleccionadas";
-            for (int i = 0; i < 12; i++)
+            if (refs.Subtitle != null) refs.Subtitle.text = AppState.MarkersScannedCount() + "/" + refs.CardBook.Length + " páginas coleccionadas";
+            for (int i = 0; i < refs.CardBook.Length; i++)
             {
                 int book = refs.CardBook[i], topic = refs.CardTopic[i];
                 bool on = AppState.IsMarkerScanned(book, topic);

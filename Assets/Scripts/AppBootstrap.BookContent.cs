@@ -162,7 +162,7 @@ namespace ARDiabetes
                 Narration = new[] { ClinN(0, N(8)), N(9), ClinN(2, N(10)), ClinN(3, N(11)) },
                 // Minijuegos del cliente: 3 misiones de 3 preguntas.
                 Quiz = Misiones(
-                    ("Misión 1", "Monitoreo de glucosa", new[]
+                    ("Misión 1", "Conocer el glucómetro", new[]
                     {
                         new GameItem { Q = "¿Para qué sirve el glucómetro?",
                             Options = new[] { "Medir la temperatura del cuerpo.", "Medir la cantidad de glucosa en la sangre.", "Medir el peso corporal." }, Correct = 1 },
@@ -171,7 +171,7 @@ namespace ARDiabetes
                         new GameItem { Q = "¿Dónde podemos observar el resultado de nuestra glucosa?",
                             Options = new[] { "En la pantalla del glucómetro.", "En la tira reactiva.", "En el botón del glucómetro." }, Correct = 0 },
                     }),
-                    ("Misión 2", "Administración de insulina", new[]
+                    ("Misión 2", "Comprender su función", new[]
                     {
                         new GameItem { Q = "¿A qué se parece la insulina en nuestro libro?",
                             Options = new[] { "Una llave que ayuda a abrir la puerta de las células.", "Un reloj que mide el tiempo.", "Un termómetro que mide la temperatura." }, Correct = 0 },
@@ -180,7 +180,7 @@ namespace ARDiabetes
                         new GameItem { Q = "¿Qué órgano produce la insulina?",
                             Options = new[] { "El corazón.", "Los pulmones.", "El páncreas." }, Correct = 2 },
                     }),
-                    ("Misión 3", "Autocuidado", new[]
+                    ("Misión 3", "Practicar hábitos saludables", new[]
                     {
                         new GameItem { Q = "¿Cuál de estas acciones forma parte de mi autocuidado diario?",
                             Options = new[] { "Olvidarme de mi tratamiento.", "Revisar mi glucosa según mi plan de cuidado.", "No descansar durante el día." }, Correct = 1 },
@@ -190,6 +190,36 @@ namespace ARDiabetes
                             Options = new[] { "Alimentarme bien, realizar actividad física segura y descansar.", "Comer solamente dulces.", "Dormir poco y no realizar actividades." }, Correct = 0 },
                     })),
             };
+
+            // ---- Cambios del cliente (18 nov): 3 temas por libro ----
+            AudioClip FisioN(int i, AudioClip porDefecto) => fisioNarracion != null && i < fisioNarracion.Length && fisioNarracion[i] != null ? fisioNarracion[i] : porDefecto;
+
+            // Fisiológico: célula muscular (antes «Insulina y glucosa»), glucagón y sistema inmunitario
+            // (antes «¿Qué es la diabetes tipo 1?»); sale «El páncreas». El texto del cliente reemplaza al anterior.
+            var fisio = books[0];
+            var fisioNarr = new[] { FisioN(2, N(2)), FisioN(3, N(3)), FisioN(0, N(0)) };
+            fisio.SoloTemas(2, 3, 0);
+            fisio.TopicTitle = new[] { "¿Cómo entra la glucosa en una célula muscular?", "El mensaje del glucagón", "El sistema inmunitario ataca por error" };
+            fisio.TopicSub = new[] { "La insulina abre la puerta", "El hígado y su reserva", "Las células beta" };
+            fisio.DescPre = new[]
+            {
+                "La glucosa y la insulina viajan por la sangre hasta los músculos. La insulina se une al receptor de la célula muscular, como si tocara un timbre, y activa una señal que lleva las pequeñas puertas GLUT4 a la superficie celular.\n\nPor ellas entra la glucosa que, con ayuda de la mitocondria, se utiliza para producir ATP: una molécula que aporta energía para las tareas de la célula.",
+                "Cuando pasa un tiempo sin comer y disminuye la glucosa en la sangre, las células alfa del páncreas liberan glucagón. Esta hormona viaja hasta el hígado y le envía un mensaje para transformar parte de su reserva de glucógeno en glucosa.\n\nEl hígado libera esa glucosa a la sangre para que llegue a otras partes del cuerpo y ayude a regular la cantidad de glucosa en circulación.",
+                "Las células beta del páncreas producen insulina, representada aquí como una llave. En la diabetes tipo 1, el sistema inmunitario, encargado de protegernos, ataca por error a estas células.\n\nCon el tiempo, las células beta dejan de funcionar y se van perdiendo, por lo que el páncreas produce menos insulina. Esto no ocurrió por algo que hiciste: la diabetes tipo 1 no es tu culpa."
+            };
+            fisio.TopicDescubre = null;
+            fisio.Narration = fisioNarr;
+
+            // Nutricional: quedan los 3 primeros con nombre nuevo; el contenido nuevo lo manda el cliente después.
+            var nutri = books[1];
+            nutri.SoloTemas(0, 1, 2);
+            nutri.TopicTitle = new[] { "¿Qué hay dentro de mi plato?", "¿Dónde encuentro carbohidratos?", "¿Qué alimentos son recomendados?" };
+
+            // Clínico: glucómetro, insulina y autocuidado (como las 3 misiones del quiz); sale «Síntomas».
+            var clin = books[2];
+            clin.SoloTemas(2, 0, 3);
+            clin.TopicTitle = new[] { "Conocer el glucómetro", "Comprender su función", "Practicar hábitos saludables" };
+
             for (int i = 0; i < books.Length; i++) AppState.QuizTotal[i] = books[i].Quiz.Length;
         }
     }

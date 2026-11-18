@@ -55,6 +55,19 @@ namespace ARDiabetes
 
         // Juegos y Retos del libro.
         public GameItem[] Quiz;
+
+        /// <summary>Deja solo los temas indicados, en ese orden (índices de los temas originales):
+        /// reordena todo lo que va por tema (textos, íconos, modelos, marcadores, audio).</summary>
+        public void SoloTemas(params int[] orden)
+        {
+            T[] P<T>(T[] a) => a == null ? null : System.Array.ConvertAll(orden, i => i < a.Length ? a[i] : default);
+            TopicTitle = P(TopicTitle); TopicSub = P(TopicSub); TopicIcon = P(TopicIcon);
+            TopicModel = P(TopicModel); TopicPaleta = P(TopicPaleta);
+            Markers = P(Markers); MarkersExtra = P(MarkersExtra);
+            TopicIlustracion = P(TopicIlustracion); TopicDescubre = P(TopicDescubre); TopicInfoAR = P(TopicInfoAR);
+            Narration = P(Narration);
+            DescKids = P(DescKids); DescPre = P(DescPre); DescTeens = P(DescTeens);
+        }
     }
 
     /// <summary>Una pregunta de "Juegos y Retos". El tipo se deduce del texto: "Relaciona" muestra

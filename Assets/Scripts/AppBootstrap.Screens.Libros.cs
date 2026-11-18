@@ -37,7 +37,8 @@ namespace ARDiabetes
             var b = books[book];
             var p = Panel(book + "_Temas");
             var fondo = UIKit.Img(p, null, "Fondo"); fondo.color = FondoLibro[book]; UIKit.Stretch(fondo.rectTransform);
-            BuildHeaderBar(p, b.Title, b.Accent, figBook != null ? figBook : icBook, () => ShowOnly(pMundos), RobotDeLibro(book));
+            // Encabezado solo con el nombre del libro (pedido del cliente, 18 nov).
+            BuildHeaderBar(p, b.Title, b.Accent, null, () => ShowOnly(pMundos));
 
             float columnW = Land ? 1000f : 1080f, w = columnW - 40f * S;
             var content = BuildAreaScroll(p, "Topics", 82f * S, columnW);
@@ -68,7 +69,7 @@ namespace ARDiabetes
             UIKit.TopLeft(worldSub.rectTransform, 24f * S, yTexto + 32f * S + tituloH, 215f * S, 46f * S);
             y += heroH + 25f * S;
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < b.TopicTitle.Length; i++)
             {
                 int idx = i;
                 bool inverso = i % 2 == 1;
@@ -128,15 +129,14 @@ namespace ARDiabetes
             const float S = 2.77f;
             var b = books[book];
             var p = Panel(book + "_Detalle");
-            Sprite headerIcon = book == 0 ? figTemas[1] : book == 1 ? figTemas[6] : figKit;
-            BuildHeaderBar(p, b.Title, b.Accent, headerIcon, () => ShowOnly(bookTemas[book]), RobotDeLibro(book));
+            BuildHeaderBar(p, b.Title, b.Accent, null, () => ShowOnly(bookTemas[book]));
 
             float columnW = Land ? 1000f : 1080f, y = 20f * S, w = columnW - 40f * S;
             var content = BuildAreaScroll(p, "Detail", 0f, columnW);
 
             var discover = UIKit.Box(content, b.Accent, Mathf.RoundToInt(28f * S), "Discover");
             UIKit.Top(discover.rectTransform, 0, y, w, 290f * S);
-            UIKit.AddShadow(discover, Mathf.RoundToInt(28f * S), .13f, -8, 8);
+            var discoverShadow = UIKit.AddShadow(discover, Mathf.RoundToInt(28f * S), .13f, -8, 8);
             discover.gameObject.AddComponent<Mask>();
             var discoverLabel = UIKit.Text(discover.transform, "DESCUBRE", 13f * S, Color.white, TextAlignmentOptions.Left);
             discoverLabel.characterSpacing = 9f;
@@ -145,9 +145,6 @@ namespace ARDiabetes
             var img = UIKit.Img(band.transform, book == 0 && spPancreasPersonaje != null ? spPancreasPersonaje : b.HeroIcon, "Img");
             img.preserveAspect = true;
             UIKit.TopLeft(img.rectTransform, (w - 230f * S) / 2f, 55f * S, 230f * S, 180f * S);
-            var discoverRobot = UIKit.Img(discover.transform, RobotDeLibro(book), "Robot"); discoverRobot.preserveAspect = true;
-            UIKit.TopLeft(discoverRobot.rectTransform, w - 86f * S, 208f * S, 78f * S, 94f * S);
-            UIKit.SombraImagen(discoverRobot, .2f, 4f * S);
             y += 290f * S + 20f * S;
 
             var learn = UIKit.Box(content, UIKit.Card, Mathf.RoundToInt(24f * S), "Learn");
@@ -193,21 +190,37 @@ namespace ARDiabetes
             refs.Coach = coach; refs.Interact = interact.rectTransform; refs.InteractShadow = interactShadow.rectTransform;
             refs.AnchoColumna = columnW;
             refs.ImgPorDefecto = img.sprite;
+            refs.BandShadow = discoverShadow.rectTransform; refs.BandLabel = discoverLabel; refs.Accent = b.Accent;
             title.text = b.TopicTitle[0]; desc.text = b.DescDetalle(0);
             PonerIlustracion(refs, b, 0);
             AcomodarDetalle(refs);
             return p;
         }
 
-        // Bloque DESCUBRE: la ilustración del cliente del tema (cuadrada, más grande) o la de siempre.
+        // Bloque de imagen del tema. Con ilustración del cliente: tarjeta clara cuadrada que la muestra
+        // a todo el ancho (como la referencia del 18 nov). Sin ella: la banda de color DESCUBRE de siempre.
         void PonerIlustracion(DetalleRefs r, BookDef b, int topic)
         {
             const float S = 2.77f;
             var ilus = b.IlustracionFor(topic);
-            float w = r.Band.rectTransform.sizeDelta.x;
+            var band = r.Band.rectTransform;
+            float w = band.sizeDelta.x, pad = 14f * S, alto;
             r.Img.sprite = ilus != null ? ilus : r.ImgPorDefecto;
-            if (ilus != null) UIKit.TopLeft(r.Img.rectTransform, (w - 225f * S) / 2f, 48f * S, 225f * S, 225f * S);
-            else UIKit.TopLeft(r.Img.rectTransform, (w - 230f * S) / 2f, 55f * S, 230f * S, 180f * S);
+            if (ilus != null)
+            {
+                alto = w;
+                r.Band.color = UIKit.Card;
+                UIKit.TopLeft(r.Img.rectTransform, pad, pad, w - 2f * pad, w - 2f * pad);
+            }
+            else
+            {
+                alto = 290f * S;
+                r.Band.color = r.Accent;
+                UIKit.TopLeft(r.Img.rectTransform, (w - 230f * S) / 2f, 55f * S, 230f * S, 180f * S);
+            }
+            if (r.BandLabel != null) r.BandLabel.gameObject.SetActive(ilus == null);
+            band.sizeDelta = new Vector2(w, alto);
+            if (r.BandShadow != null) UIKit.AjustarSombra(r.BandShadow, band, -8f);
         }
 
         // El alto de "Aprende" depende del texto del tema, y "Interactúa" va debajo.
@@ -222,12 +235,15 @@ namespace ARDiabetes
             UIKit.TopLeft(r.Coach, 24f * S, yCoach, ancho, 66f * S);
 
             float altoLearn = yCoach + 66f * S + 24f * S;
-            float cambio = altoLearn - r.Learn.sizeDelta.y;
+            // Todo se apila debajo del bloque de imagen, cuyo alto depende del tema.
+            float yLearn = -r.Band.rectTransform.anchoredPosition.y + r.Band.rectTransform.sizeDelta.y + 20f * S;
             r.Learn.sizeDelta = new Vector2(r.Learn.sizeDelta.x, altoLearn);
-            r.LearnShadow.sizeDelta += new Vector2(0, cambio);
-            r.Interact.anchoredPosition += new Vector2(0, -cambio);
-            r.InteractShadow.anchoredPosition += new Vector2(0, -cambio);
-            r.Content.sizeDelta = new Vector2(r.AnchoColumna, -r.Interact.anchoredPosition.y + r.Interact.sizeDelta.y + 28f * S);
+            r.Learn.anchoredPosition = new Vector2(r.Learn.anchoredPosition.x, -yLearn);
+            UIKit.AjustarSombra(r.LearnShadow, r.Learn, -7f);
+            float yInteract = yLearn + altoLearn + 20f * S;
+            r.Interact.anchoredPosition = new Vector2(r.Interact.anchoredPosition.x, -yInteract);
+            UIKit.AjustarSombra(r.InteractShadow, r.Interact, -7f);
+            r.Content.sizeDelta = new Vector2(r.AnchoColumna, yInteract + r.Interact.sizeDelta.y + 28f * S);
         }
 
         void RefreshDetalle()
@@ -241,7 +257,6 @@ namespace ARDiabetes
             refs.Desc.text = b.DescDetalle(currentTopic);
             PonerIlustracion(refs, b, currentTopic);
             AcomodarDetalle(refs);
-            refs.Band.color = b.Accent;
             detTitle = refs.Title; detDesc = refs.Desc; detBand = refs.Band; detImg = refs.Img;
             var msgs = AppState.MarkTopicSeen(currentBook, currentTopic);
             if (msgs.Count > 0) ShowReward(string.Join("\n", msgs));

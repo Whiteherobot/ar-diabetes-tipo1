@@ -45,7 +45,7 @@ namespace ARDiabetes
                         foreach (char c in "Sofía") { campo.text += c; yield return Esperar(0.18f); }
                     }
                     yield return Esperar(0.8f);
-                    yield return TocarObjeto(BotonConSprite(bustos[2]), null);
+                    yield return TocarObjeto(BotonConSprite(cabezas[2]), null);
                     yield return Esperar(1.5f);
                     demoPaso = 1;
                     yield return Tocar("CONTINUAR");
@@ -56,14 +56,14 @@ namespace ARDiabetes
                     yield return Desplazar(1f, 5f);
                     yield return Esperar(1f);
                     yield return Desplazar(0f, 2f);
-                    yield return Tocar("ExploraAhora");
+                    ShowOnly(pMundos); // la tarjeta «Comienza a explorar» se quitó del inicio
                     yield return Esperar(2.5f);
                     demoPaso = 2;
                     yield return Tocar("Mundo1");
                     yield break;
 
                 case 2: // Libro Nutricional: los 3 modelos animados
-                    string[] temas = { "Plato saludable", "Carbohidratos", "Alimentos recomendados" };
+                    string[] temas = { "¿Qué hay dentro de mi plato?", "¿Dónde encuentro carbohidratos?", "¿Qué alimentos son recomendados?" };
                     for (int t = 0; t < temas.Length; t++)
                     {
                         if (t > 0) { ShowOnly(bookTemas[1]); yield return Esperar(1.2f); }

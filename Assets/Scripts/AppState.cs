@@ -20,13 +20,16 @@ namespace ARDiabetes
         const string KeyQuizMask = "ar_quiz_correct";    // bit i = libro*4 + pregunta (respuesta correcta, quiz)
         const string KeyBonusMask = "ar_bonus";          // bit 0-2 = libro completo (lectura), bit 3 = los 3 libros,
                                                           // bit 4-6 = quiz de libro completo (Juegos y Retos),
-                                                          // bit 7 = explorador AR (12/12 marcadores), bit 8 = racha de 7 días.
+                                                          // bit 7 = explorador AR (9/9 marcadores), bit 8 = racha de 7 días.
                                                           // Cada bit es también, 1 a 1, el índice de una insignia en Badges[].
         const string KeyStreak = "ar_streak";
         const string KeyLastDay = "ar_last_day"; // días desde una fecha fija, para calcular racha
         const string KeyMuted = "ar_muted";
         const string KeyFontScale = "ar_font_scale";
-        const int TopicsTotal = 12; // 3 libros x 4 temas
+        // Cada libro tiene 3 temas (antes 4). Los bits siguen en libro*4 + tema para no perder el
+        // progreso guardado; el 4.º bit de cada libro ya no se cuenta.
+        public const int TemasPorLibro = 3;
+        const int TopicsTotal = 3 * TemasPorLibro;
         const int StarsPerLevel = 50;
         static readonly DateTime Epoch = new DateTime(2020, 1, 1);
 
@@ -102,7 +105,7 @@ namespace ARDiabetes
         {
             int bonus = PlayerPrefs.GetInt(KeyBonusMask, 0);
             string msg = null;
-            if (TopicsSeenCount(book) >= 4 && (bonus & (1 << book)) == 0)
+            if (TopicsSeenCount(book) >= TemasPorLibro && (bonus & (1 << book)) == 0)
             {
                 bonus |= 1 << book;
                 Stars += 15;
@@ -156,15 +159,15 @@ namespace ARDiabetes
             return msgs;
         }
 
-        /// <summary>Bonus único (+25) al escanear en AR real los 12 marcadores (insignia "Explorador AR").</summary>
+        /// <summary>Bonus único (+25) al escanear en AR real los 9 marcadores (insignia "Explorador AR").</summary>
         static string CheckScanAllBonus()
         {
-            if (PlayerPrefs.GetInt(KeyScanMask, 0) != (1 << TopicsTotal) - 1) return null;
+            if (Contar(KeyScanMask, -1) < TopicsTotal) return null;
             int bonus = PlayerPrefs.GetInt(KeyBonusMask, 0);
             if ((bonus & (1 << 7)) != 0) return null;
             PlayerPrefs.SetInt(KeyBonusMask, bonus | (1 << 7));
             Stars += 25;
-            return "¡Explorador AR! Escaneaste las 12 páginas · +25 estrellas";
+            return "¡Explorador AR! Escaneaste las " + TopicsTotal + " páginas · +25 estrellas";
         }
 
         /// <summary>Marca un juego del quiz de un libro como respondido correctamente la primera
@@ -211,22 +214,25 @@ namespace ARDiabetes
             return n;
         }
 
-        /// <summary>Marcadores reales escaneados en AR (0-12), para el contador de la Colección AR.</summary>
+        /// <summary>Marcadores reales escaneados en AR (0-9), para el contador de la Colección AR.</summary>
         public static int MarkersScannedCount()
         {
-            int mask = PlayerPrefs.GetInt(KeyScanMask, 0);
-            int n = 0;
-            for (int i = 0; i < TopicsTotal; i++) if ((mask & (1 << i)) != 0) n++;
-            return n;
+            return Contar(KeyScanMask, -1);
         }
 
         /// <summary>Temas vistos de un libro (0-2), o el total de los 3 si book &lt; 0.</summary>
         public static int TopicsSeenCount(int book = -1)
         {
-            int mask = PlayerPrefs.GetInt(KeyTopicsMask, 0);
-            int from = book < 0 ? 0 : book * 4, to = book < 0 ? TopicsTotal : book * 4 + 4;
-            int n = 0;
-            for (int i = from; i < to; i++) if ((mask & (1 << i)) != 0) n++;
+            return Contar(KeyTopicsMask, book);
+        }
+
+        /// <summary>Bits encendidos de los temas vigentes de un libro (o de los 3 si book &lt; 0).</summary>
+        static int Contar(string key, int book)
+        {
+            int mask = PlayerPrefs.GetInt(key, 0), n = 0;
+            for (int b = 0; b < 3; b++)
+                if (book < 0 || b == book)
+                    for (int t = 0; t < TemasPorLibro; t++) if ((mask & (1 << (b * 4 + t))) != 0) n++;
             return n;
         }
 
@@ -281,7 +287,7 @@ namespace ARDiabetes
             new BadgeDef{ Title = "Genio Fisiológico",  Desc = "Responde bien los 3 juegos del Libro Fisiológico", Color = UIKit.Hex("DD5450")  },
             new BadgeDef{ Title = "Genio Nutricional",  Desc = "Responde bien los 3 juegos del Libro Nutricional", Color = UIKit.Nutri  },
             new BadgeDef{ Title = "Genio Clínico",      Desc = "Responde bien los 3 juegos del Libro Clínico",     Color = UIKit.Clin   },
-            new BadgeDef{ Title = "Explorador AR",      Desc = "Escanea las 12 páginas en realidad aumentada",     Color = UIKit.Scan   },
+            new BadgeDef{ Title = "Explorador AR",      Desc = "Escanea las 9 páginas en realidad aumentada",     Color = UIKit.Scan   },
             new BadgeDef{ Title = "Racha de fuego",     Desc = "Usa la app 7 días seguidos",                       Color = UIKit.Juegos },
         };
 
