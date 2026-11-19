@@ -144,7 +144,7 @@ namespace ARDiabetes
             var band = discover;
             var img = UIKit.Img(band.transform, book == 0 && spPancreasPersonaje != null ? spPancreasPersonaje : b.HeroIcon, "Img");
             img.preserveAspect = true;
-            UIKit.TopLeft(img.rectTransform, (w - 230f * S) / 2f, 55f * S, 230f * S, 180f * S);
+            UIKit.TopLeft(img.rectTransform, (w - 190f * S) / 2f, 58f * S, 190f * S, 190f * S);
             y += 290f * S + 20f * S;
 
             var learn = UIKit.Box(content, UIKit.Card, Mathf.RoundToInt(24f * S), "Learn");
@@ -216,7 +216,7 @@ namespace ARDiabetes
             {
                 alto = 290f * S;
                 r.Band.color = r.Accent;
-                UIKit.TopLeft(r.Img.rectTransform, (w - 230f * S) / 2f, 55f * S, 230f * S, 180f * S);
+                UIKit.TopLeft(r.Img.rectTransform, (w - 190f * S) / 2f, 58f * S, 190f * S, 190f * S);
             }
             if (r.BandLabel != null) r.BandLabel.gameObject.SetActive(ilus == null);
             band.sizeDelta = new Vector2(w, alto);
