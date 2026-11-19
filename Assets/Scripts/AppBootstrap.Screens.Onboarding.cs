@@ -304,7 +304,7 @@ namespace ARDiabetes
             // Solo la cabeza del robot elegido como avatar (antes iba el trío de robots).
             var heroRobot = UIKit.Img(hero.transform, CabezaElegida(), "RobotFront");
             heroRobot.preserveAspect = true;
-            UIKit.TopLeft(heroRobot.rectTransform, heroW - 196f * S, T + 150f * S, 176f * S, 166f * S);
+            UIKit.TopLeft(heroRobot.rectTransform, heroW - 156f * S, T + 178f * S, 132f * S, 132f * S);
             UIKit.SombraImagen(heroRobot, .15f, 5f * S);
             Anim.HeroLlega(heroRobot.rectTransform);
 
